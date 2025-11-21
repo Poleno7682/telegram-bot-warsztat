@@ -1,0 +1,138 @@
+{
+  "common": {
+    "yes": "Tak",
+    "no": "Nie",
+    "cancel": "Anuluj",
+    "back": "Wstecz",
+    "confirm": "Potwierdź",
+    "save": "Zapisz",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "close": "Zamknij",
+    "error": "Błąd",
+    "success": "Sukces",
+    "loading": "Ładowanie..."
+  },
+  
+  "start": {
+    "welcome": "👋 Witamy w systemie rezerwacji serwisu samochodowego!\n\nWybierz język:",
+    "select_language": "Wybierz język / Выберите язык",
+    "language_selected": "✅ Język ustawiony: Polski",
+    "unauthorized": "❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nSkontaktuj się z administratorem.",
+    "unauthorized_both": "❌ You are not authorized to use this bot.\n❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nContact administrator / Skontaktuj się z administratorem."
+  },
+  
+  "menu": {
+    "main": {
+      "title": "📋 Menu główne",
+      "new_booking": "➕ Nowa rezerwacja",
+      "my_bookings": "📅 Moje rezerwacje",
+      "settings": "⚙️ Ustawienia",
+      "help": "❓ Pomoc"
+    },
+    "admin": {
+      "title": "👨‍💼 Panel administratora",
+      "manage_users": "👥 Zarządzaj użytkownikami",
+      "manage_mechanics": "🔧 Zarządzaj mechanikami",
+      "manage_services": "🛠️ Zarządzaj usługami",
+      "manage_settings": "⚙️ Ustawienia serwisu",
+      "statistics": "📊 Statystyki"
+    },
+    "mechanic": {
+      "title": "🔧 Panel mechanika",
+      "pending_bookings": "⏳ Oczekujące rezerwacje",
+      "my_bookings": "📅 Moje rezerwacje",
+      "manage_services": "🛠️ Zarządzaj usługami"
+    }
+  },
+  
+  "booking": {
+    "create": {
+      "title": "➕ Nowa rezerwacja",
+      "select_service": "Wybierz usługę:",
+      "select_date": "Wybierz datę:",
+      "select_time": "Wybierz godzinę:",
+      "enter_car_brand": "Wprowadź markę samochodu:",
+      "enter_car_model": "Wprowadź model samochodu:",
+      "enter_car_number": "Wprowadź numer rejestracyjny:",
+      "enter_client_name": "Wprowadź imię klienta:",
+      "enter_client_phone": "Wprowadź numer telefonu klienta:",
+      "enter_description": "Wprowadź krótki opis problemu:",
+      "no_available_slots": "Brak dostępnych terminów na wybrany dzień.",
+      "translating": "⏳ Tłumaczenie opisu..."
+    },
+    "confirm": {
+      "title": "✅ Potwierdź rezerwację",
+      "details": "📋 Szczegóły rezerwacji:\n\n🚗 Pojazd: {brand} {model}\n📝 Nr rej: {number}\n👤 Klient: {client_name}\n📞 Telefon: {client_phone}\n🛠️ Usługa: {service}\n📅 Data: {date}\n🕐 Godzina: {time}\n\n💬 Opis:\n{description}",
+      "success": "✅ Rezerwacja utworzona!\n\nOczekuje na akceptację mechanika.",
+      "error": "❌ Błąd podczas tworzenia rezerwacji."
+    },
+    "notification": {
+      "new_booking": "🔔 Nowa rezerwacja!\n\n👤 Utworzona przez: {user_name}\n🚗 Pojazd: {brand} {model}\n📝 Nr rej: {number}\n👤 Klient: {client_name}\n📞 Telefon: {client_phone}\n🛠️ Usługa: {service}\n📅 Data: {date}\n🕐 Godzina: {time}\n\n💬 Opis:\n{description}",
+      "accepted": "✅ Rezerwacja zaakceptowana!\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
+      "rejected": "❌ Rezerwacja odrzucona\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
+      "time_change": "⏰ Propozycja zmiany terminu\n\n🔧 Mechanik: {mechanic_name}\n📅 Nowy termin: {date} {time}\n\n📋 Szczegóły:\n{details}"
+    },
+    "actions": {
+      "accept": "✅ Akceptuj",
+      "reject": "❌ Odrzuć",
+      "change_time": "⏰ Zmień termin",
+      "confirm_time": "✅ Potwierdź termin",
+      "propose_new_time": "🔄 Zaproponuj nowy termin"
+    }
+  },
+  
+  "user_management": {
+    "add_user": "➕ Dodaj użytkownika",
+    "add_mechanic": "➕ Dodaj mechanika",
+    "remove_user": "➖ Usuń użytkownika",
+    "remove_mechanic": "➖ Usuń mechanika",
+    "enter_telegram_id": "Wprowadź Telegram ID użytkownika:",
+    "user_added": "✅ Użytkownik dodany pomyślnie!",
+    "mechanic_added": "✅ Mechanik dodany pomyślnie!",
+    "user_removed": "✅ Użytkownik usunięty!",
+    "mechanic_removed": "✅ Mechanik usunięty!",
+    "user_not_found": "❌ Użytkownik nie znaleziony.",
+    "invalid_id": "❌ Nieprawidłowe ID Telegram."
+  },
+  
+  "service_management": {
+    "title": "🛠️ Zarządzanie usługami",
+    "add_service": "➕ Dodaj usługę",
+    "edit_service": "✏️ Edytuj usługę",
+    "delete_service": "🗑️ Usuń usługę",
+    "list_services": "📋 Lista usług",
+    "enter_name_pl": "Wprowadź nazwę usługi (polski):",
+    "enter_name_ru": "Wprowadź nazwę usługi (rosyjski):",
+    "enter_duration": "Wprowadź czas trwania (w minutach):",
+    "enter_price": "Wprowadź cenę:",
+    "service_added": "✅ Usługa dodana!",
+    "service_updated": "✅ Usługa zaktualizowana!",
+    "service_deleted": "✅ Usługa usunięta!",
+    "no_services": "Brak usług w systemie."
+  },
+  
+  "settings": {
+    "title": "⚙️ Ustawienia serwisu",
+    "work_hours": "🕐 Godziny pracy",
+    "time_step": "⏱️ Krok czasowy",
+    "buffer_time": "⏰ Czas buforowy",
+    "work_start": "Początek pracy (HH:MM):",
+    "work_end": "Koniec pracy (HH:MM):",
+    "step_minutes": "Krok czasowy (w minutach):",
+    "buffer_minutes": "Czas buforowy (w minutach):",
+    "settings_updated": "✅ Ustawienia zaktualizowane!",
+    "invalid_time": "❌ Nieprawidłowy format czasu. Użyj HH:MM."
+  },
+  
+  "errors": {
+    "unknown": "❌ Wystąpił nieznany błąd.",
+    "database": "❌ Błąd bazy danych.",
+    "permission_denied": "❌ Brak uprawnień.",
+    "invalid_input": "❌ Nieprawidłowe dane wejściowe.",
+    "service_not_found": "❌ Usługa nie znaleziona.",
+    "booking_not_found": "❌ Rezerwacja nie znaleziona.",
+    "time_slot_taken": "❌ Ten termin jest już zajęty."
+  }
+}
+

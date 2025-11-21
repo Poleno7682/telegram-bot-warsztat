@@ -1,0 +1,31 @@
+# Telegram Bot Framework
+aiogram==3.22.0
+aiogram-dialog==2.1.0
+
+# Database
+SQLAlchemy==2.0.36
+aiosqlite==0.20.0
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Translation
+googletrans==4.0.0rc1
+deep-translator==1.11.4
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Utilities
+pydantic==2.10.5
+pydantic-settings==2.7.1
+
+# Date/Time
+pytz==2025.1
+python-dateutil==2.9.0
+
+# Async utilities
+aiofiles==24.1.0
+
+# Logging
+structlog==24.4.0
+

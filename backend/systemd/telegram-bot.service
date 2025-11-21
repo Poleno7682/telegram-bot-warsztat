@@ -1,0 +1,26 @@
+[Unit]
+Description=Telegram Bot - Auto Service Booking System
+After=network.target
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+WorkingDirectory=/opt/telegram-bot/backend
+Environment="PATH=/opt/telegram-bot/backend/venv/bin"
+ExecStart=/opt/telegram-bot/backend/venv/bin/python -m app.main
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=telegram-bot
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
