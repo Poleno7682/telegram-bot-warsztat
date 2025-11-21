@@ -1,5 +1,7 @@
 """Application settings using pydantic-settings"""
 
+import os
+from pathlib import Path
 from functools import lru_cache
 from typing import List
 from pydantic import Field
@@ -37,7 +39,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).parent.parent.parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
