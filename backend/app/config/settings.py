@@ -70,5 +70,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance"""
-    return Settings(_env_file=str(Path(__file__).parent.parent.parent / ".env"))
+    # Settings loads from .env via model_config, not constructor args
+    return Settings()  # type: ignore[call-arg]
 
