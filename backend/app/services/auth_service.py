@@ -220,4 +220,48 @@ class AuthService:
         if success:
             return True, "User removed successfully"
         return False, "User not found"
+    
+    async def add_user_role(self, telegram_id: int, role: UserRole) -> Optional[User]:
+        """
+        Add user with specified role or update existing user's role
+        
+        Args:
+            telegram_id: Telegram user ID
+            role: Role to assign
+            
+        Returns:
+            User object or None if failed
+        """
+        # Get or create user
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        
+        if user:
+            # Update existing user's role
+            user.role = role
+            user.is_active = True
+        else:
+            # Create new user with role
+            user = await self.user_repo.create(
+                telegram_id=telegram_id,
+                role=role,
+                is_active=True
+            )
+        
+        await self.session.commit()
+        return user
+    
+    async def remove_user_role(self, telegram_id: int) -> bool:
+        """
+        Remove user by deactivating their account
+        
+        Args:
+            telegram_id: Telegram user ID
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        success = await self.user_repo.deactivate_user(telegram_id)
+        if success:
+            await self.session.commit()
+        return success
 

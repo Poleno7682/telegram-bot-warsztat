@@ -2,7 +2,7 @@
 
 from aiogram import Router, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message as TelegramMessage, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
@@ -15,7 +15,7 @@ router = Router(name="start")
 
 @router.message(CommandStart())
 async def cmd_start(
-    message: Message,
+    message: TelegramMessage,
     session: AsyncSession
 ):
     """
@@ -25,6 +25,9 @@ async def cmd_start(
         message: Message from user
         session: Database session
     """
+    if not message.from_user:
+        return
+    
     auth_service = AuthService(session)
     
     # Check if user is authorized
@@ -69,6 +72,10 @@ async def select_language(
         callback: Callback query
         session: Database session
     """
+    if not callback.data or not callback.from_user:
+        await callback.answer()
+        return
+    
     language = callback.data.split(":")[1]
     
     # Update user's language
@@ -79,13 +86,9 @@ async def select_language(
     )
     
     if user:
-        # Send confirmation
-        text = get_text("start.language_selected", language)
-        await callback.message.edit_text(text)
-        
-        # Show main menu
+        # Show main menu (will delete language selection message)
         from app.bot.handlers.common import show_main_menu
-        await show_main_menu(callback.message, user)
+        await show_main_menu(callback, user)
     
     await callback.answer()
 

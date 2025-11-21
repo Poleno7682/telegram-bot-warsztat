@@ -32,8 +32,10 @@ class BookingStates(StatesGroup):
 class AddServiceStates(StatesGroup):
     """States for adding a new service"""
     
-    entering_name_pl = State()
-    entering_name_ru = State()
+    entering_name_pl = State()  # Also used for initial name input (auto-translate)
+    entering_name_ru = State()  # Also used for translation confirmation
+    entering_name_pl_manual = State()  # Manual Polish name entry
+    entering_name_ru_manual = State()  # Manual Russian name entry
     entering_duration = State()
     entering_price = State()
 

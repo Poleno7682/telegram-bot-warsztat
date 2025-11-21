@@ -11,7 +11,8 @@
     "close": "Zamknij",
     "error": "Błąd",
     "success": "Sukces",
-    "loading": "Ładowanie..."
+    "loading": "Ładowanie...",
+    "name": "Nazwa"
   },
   
   "start": {
@@ -27,6 +28,7 @@
       "title": "📋 Menu główne",
       "new_booking": "➕ Nowa rezerwacja",
       "my_bookings": "📅 Moje rezerwacje",
+      "user_settings": "⚙️ Moje ustawienia",
       "settings": "⚙️ Ustawienia",
       "help": "❓ Pomoc"
     },
@@ -79,10 +81,23 @@
       "change_time": "⏰ Zmień termin",
       "confirm_time": "✅ Potwierdź termin",
       "propose_new_time": "🔄 Zaproponuj nowy termin"
+    },
+    "my_bookings": {
+      "title": "📅 Moje rezerwacje",
+      "no_bookings": "Nie masz jeszcze żadnych rezerwacji."
+    },
+    "pending": {
+      "title": "⏳ Oczekujące rezerwacje",
+      "no_bookings": "Brak oczekujących rezerwacji."
+    },
+    "mechanic": {
+      "my_bookings_title": "📅 Moje potwierdzone rezerwacje"
     }
   },
   
   "user_management": {
+    "title": "👥 Zarządzanie użytkownikami",
+    "select_action": "Wybierz akcję:",
     "add_user": "➕ Dodaj użytkownika",
     "add_mechanic": "➕ Dodaj mechanika",
     "remove_user": "➖ Usuń użytkownika",
@@ -102,14 +117,30 @@
     "edit_service": "✏️ Edytuj usługę",
     "delete_service": "🗑️ Usuń usługę",
     "list_services": "📋 Lista usług",
+    "enter_name": "Wprowadź nazwę usługi (w swoim języku):",
     "enter_name_pl": "Wprowadź nazwę usługi (polski):",
     "enter_name_ru": "Wprowadź nazwę usługi (rosyjski):",
     "enter_duration": "Wprowadź czas trwania (w minutach):",
     "enter_price": "Wprowadź cenę:",
+    "duration": "Czas trwania",
+    "translating": "⏳ Tłumaczenie...",
+    "translation_result": "📋 Automatyczne tłumaczenie:\n\n🇵🇱 Polski: {name_pl}\n🇷🇺 Русский: {name_ru}\n\nCzy to jest prawidłowe?",
+    "confirm_translation": "✅ Potwierdź",
+    "edit_translation": "✏️ Edytuj ręcznie",
     "service_added": "✅ Usługa dodana!",
     "service_updated": "✅ Usługa zaktualizowana!",
     "service_deleted": "✅ Usługa usunięta!",
     "no_services": "Brak usług w systemie."
+  },
+  
+  "user_settings": {
+    "title": "👤 Moje ustawienia",
+    "info": "📋 Informacje o profilu:\n\n👤 Nazwa: {username}\n🆔 ID: {user_id}\n👔 Rola: {role}\n🌐 Język: {language}",
+    "change_language": "🌐 Zmień język",
+    "language_changed": "✅ Język zmieniony na: {language}",
+    "role_user": "Użytkownik",
+    "role_mechanic": "Mechanik",
+    "role_admin": "Administrator"
   },
   
   "settings": {

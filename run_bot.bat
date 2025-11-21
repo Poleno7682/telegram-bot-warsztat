@@ -32,8 +32,7 @@ echo [INFO] Starting bot...
 echo.
 python run_bot.py
 
-REM Deactivate on exit
-deactivate
+
 
 pause
 

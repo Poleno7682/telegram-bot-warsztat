@@ -131,6 +131,30 @@ class BookingRepository(BaseRepository[Booking]):
         )
         return list(result.scalars().all())
     
+    async def get_by_status(self, status: BookingStatus, limit: int = 50) -> List[Booking]:
+        """
+        Get bookings by status
+        
+        Args:
+            status: Booking status
+            limit: Maximum number of bookings
+            
+        Returns:
+            List of bookings
+        """
+        result = await self.session.execute(
+            select(Booking)
+            .options(
+                selectinload(Booking.creator),
+                selectinload(Booking.service),
+                selectinload(Booking.mechanic)
+            )
+            .where(Booking.status == status)
+            .order_by(Booking.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+    
     async def create_booking(
         self,
         creator_id: int,

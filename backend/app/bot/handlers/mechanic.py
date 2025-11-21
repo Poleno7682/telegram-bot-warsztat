@@ -1,14 +1,16 @@
 """Mechanic handlers - handling booking requests"""
 
+from typing import Callable, cast
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardButton, Message as TelegramMessage, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.booking_service import BookingService
 from app.services.time_service import TimeService
 from app.services.notification_service import NotificationService
-from app.bot.keyboards.inline import get_dates_keyboard
+from app.bot.keyboards.inline import get_dates_keyboard, get_booking_actions_keyboard
 
 router = Router(name="mechanic")
 
@@ -18,9 +20,13 @@ async def accept_booking(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: callable
+    _: Callable[[str], str]
 ):
     """Handle booking acceptance by mechanic"""
+    if not callback.data:
+        await callback.answer()
+        return
+    
     booking_id = int(callback.data.split(":")[2])
     
     # Accept booking
@@ -29,13 +35,14 @@ async def accept_booking(
     
     if booking:
         # Notify using NotificationService
-        notification_service = NotificationService(session, callback.bot)
-        await notification_service.notify_booking_accepted(booking, user)
-        
-        # Update mechanic's message
-        await callback.message.edit_text(
-            callback.message.text + f"\n\n✅ {_('booking.actions.accept')}"
-        )
+        if callback.bot and isinstance(callback.message, TelegramMessage) and callback.message.text:
+            notification_service = NotificationService(session, callback.bot)
+            await notification_service.notify_booking_accepted(booking, user)
+            
+            # Update mechanic's message
+            await callback.message.edit_text(
+                callback.message.text + f"\n\n✅ {_('booking.actions.accept')}"
+            )
     else:
         await callback.answer(msg, show_alert=True)
     
@@ -47,9 +54,13 @@ async def reject_booking(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: callable
+    _: Callable[[str], str]
 ):
     """Handle booking rejection by mechanic"""
+    if not callback.data:
+        await callback.answer()
+        return
+    
     booking_id = int(callback.data.split(":")[2])
     
     # Reject booking
@@ -58,13 +69,14 @@ async def reject_booking(
     
     if booking:
         # Notify using NotificationService
-        notification_service = NotificationService(session, callback.bot)
-        await notification_service.notify_booking_rejected(booking, user)
-        
-        # Update mechanic's message
-        await callback.message.edit_text(
-            callback.message.text + f"\n\n❌ {_('booking.actions.reject')}"
-        )
+        if callback.bot and isinstance(callback.message, TelegramMessage) and callback.message.text:
+            notification_service = NotificationService(session, callback.bot)
+            await notification_service.notify_booking_rejected(booking, user)
+            
+            # Update mechanic's message
+            await callback.message.edit_text(
+                callback.message.text + f"\n\n❌ {_('booking.actions.reject')}"
+            )
     else:
         await callback.answer(msg, show_alert=True)
     
@@ -76,9 +88,13 @@ async def change_booking_time(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: callable
+    _: Callable[[str], str]
 ):
     """Handle time change request by mechanic"""
+    if not callback.data:
+        await callback.answer()
+        return
+    
     booking_id = int(callback.data.split(":")[2])
     
     # Get available dates
@@ -86,10 +102,11 @@ async def change_booking_time(
     dates = await time_service.get_available_dates()
     
     # Show dates selection
-    await callback.message.edit_text(
-        _("booking.create.select_date"),
-        reply_markup=get_dates_keyboard(dates, user.language)
-    )
+    if isinstance(callback.message, TelegramMessage):
+        await callback.message.edit_text(
+            _("booking.create.select_date"),
+            reply_markup=get_dates_keyboard(dates, user.language)
+        )
     
     # Note: In production, use FSM state to store booking_id for time change flow
     await callback.answer()
@@ -100,9 +117,13 @@ async def confirm_proposed_time(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: callable
+    _: Callable[[str], str]
 ):
     """Handle time confirmation by creator"""
+    if not callback.data:
+        await callback.answer()
+        return
+    
     booking_id = int(callback.data.split(":")[2])
     
     # Confirm time
@@ -111,12 +132,123 @@ async def confirm_proposed_time(
     
     if booking:
         # Notify using NotificationService
-        notification_service = NotificationService(session, callback.bot)
-        await notification_service.notify_booking_accepted(booking, booking.mechanic)
-        
-        await callback.message.edit_text(_("booking.confirm.success"))
+        if callback.bot and isinstance(callback.message, TelegramMessage) and booking.mechanic:
+            notification_service = NotificationService(session, callback.bot)
+            await notification_service.notify_booking_accepted(booking, booking.mechanic)
+            
+            await callback.message.edit_text(_("booking.confirm.success"))
     else:
         await callback.answer(msg, show_alert=True)
     
+    await callback.answer()
+
+
+@router.callback_query(F.data == "mechanic:pending")
+async def show_pending_bookings(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str]
+):
+    """Show pending bookings for mechanic"""
+    from app.repositories.booking import BookingRepository
+    from app.models.booking import BookingStatus
+    
+    booking_repo = BookingRepository(session)
+    bookings = await booking_repo.get_by_status(BookingStatus.PENDING)
+    
+    if not bookings:
+        if isinstance(callback.message, TelegramMessage):
+            await callback.message.edit_text(
+                _("booking.pending.no_bookings"),
+                reply_markup=cast(InlineKeyboardMarkup, InlineKeyboardBuilder().row(
+                    InlineKeyboardButton(
+                        text=_("common.back"),
+                        callback_data="menu:main"
+                    )
+                ).as_markup())
+            )
+        await callback.answer()
+        return
+    
+    # Show first booking
+    booking = bookings[0]
+    
+    time_service = TimeService(session)
+    text = _("booking.pending.title") + f" (1/{len(bookings)})\n\n"
+    text += _("booking.confirm.details").format(
+        brand=booking.car_brand,
+        model=booking.car_model,
+        number=booking.car_number,
+        client_name=booking.client_name,
+        client_phone=booking.client_phone,
+        service=booking.service.get_name(user.language),
+        date=time_service.format_date(booking.booking_date.date(), user.language),
+        time=time_service.format_time(booking.booking_date),
+        description=booking.get_description(user.language)
+    )
+    
+    if isinstance(callback.message, TelegramMessage):
+        await callback.message.edit_text(
+            text,
+            reply_markup=get_booking_actions_keyboard(booking.id, _)
+        )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "mechanic:my_bookings")
+async def show_mechanic_bookings(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str]
+):
+    """Show mechanic's confirmed bookings"""
+    from app.repositories.booking import BookingRepository
+    from app.models.booking import BookingStatus
+    
+    booking_repo = BookingRepository(session)
+    bookings = await booking_repo.get_by_mechanic(user.id)
+    
+    # Filter only confirmed bookings
+    confirmed_bookings = [b for b in bookings if b.status == BookingStatus.ACCEPTED]
+    
+    if not confirmed_bookings:
+        if isinstance(callback.message, TelegramMessage):
+            await callback.message.edit_text(
+                _("booking.my_bookings.no_bookings"),
+                reply_markup=cast(InlineKeyboardMarkup, InlineKeyboardBuilder().row(
+                    InlineKeyboardButton(
+                        text=_("common.back"),
+                        callback_data="menu:main"
+                    )
+                ).as_markup())
+            )
+        await callback.answer()
+        return
+    
+    # Format bookings list
+    text = _("booking.mechanic.my_bookings_title") + "\n\n"
+    
+    time_service = TimeService(session)
+    
+    for booking in confirmed_bookings:
+        text += f"✅ {time_service.format_date(booking.booking_date.date(), user.language)} "
+        text += f"{time_service.format_time(booking.booking_date)}\n"
+        text += f"   🛠️ {booking.service.get_name(user.language)}\n"
+        text += f"   🚗 {booking.car_brand} {booking.car_model}\n"
+        text += f"   👤 {booking.client_name}\n"
+        text += "\n"
+    
+    if isinstance(callback.message, TelegramMessage):
+        await callback.message.edit_text(
+            text,
+            reply_markup=cast(InlineKeyboardMarkup, InlineKeyboardBuilder().row(
+                InlineKeyboardButton(
+                    text=_("common.back"),
+                    callback_data="menu:main"
+                )
+            ).as_markup())
+        )
     await callback.answer()
 

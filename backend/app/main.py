@@ -5,11 +5,12 @@ import logging
 import sys
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.config.settings import get_settings
 from app.config.database import init_db, close_db
-from app.bot.handlers import start, common, booking, mechanic, admin
+from app.bot.handlers import start, common, booking, mechanic, admin, user_settings
 from app.bot.middlewares import DbSessionMiddleware, AuthMiddleware, I18nMiddleware
 
 
@@ -60,7 +61,7 @@ async def main():
     # Initialize bot and dispatcher
     bot = Bot(
         token=settings.bot_token,
-        parse_mode=ParseMode.HTML
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     
     # Use MemoryStorage for FSM (can be replaced with Redis for production)
@@ -83,6 +84,7 @@ async def main():
     # Register routers
     dp.include_router(start.router)
     dp.include_router(common.router)
+    dp.include_router(user_settings.router)
     dp.include_router(booking.router)
     dp.include_router(mechanic.router)
     dp.include_router(admin.router)
