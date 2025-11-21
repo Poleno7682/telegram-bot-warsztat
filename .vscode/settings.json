@@ -4,6 +4,8 @@
     ],
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/backend"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.languageServer": "Pylance"
 }
 
