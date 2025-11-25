@@ -38,11 +38,16 @@ class User(Base, TimestampMixin):
         default=UserRole.USER
     )
     
-    # Language preference
-    language: Mapped[str] = mapped_column(String(10), default="pl", nullable=False)
+    # Language preference (None means not set yet)
+    language: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     
     # Active status
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+    # Reminder preferences
+    reminder_3h_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
+    reminder_1h_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
+    reminder_30m_enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
     
     # Relationships
     created_bookings: Mapped[List["Booking"]] = relationship(

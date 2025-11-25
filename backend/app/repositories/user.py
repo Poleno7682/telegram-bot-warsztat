@@ -59,7 +59,7 @@ class UserRepository(BaseRepository[User]):
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         role: UserRole = UserRole.USER,
-        language: str = "pl"
+        language: Optional[str] = None
     ) -> User:
         """
         Create new user or update existing user
@@ -112,6 +112,32 @@ class UserRepository(BaseRepository[User]):
             user.language = language
             await self.session.flush()
             await self.session.refresh(user)
+        return user
+
+    async def update_reminder_settings(
+        self,
+        telegram_id: int,
+        *,
+        reminder_3h_enabled: Optional[bool] = None,
+        reminder_1h_enabled: Optional[bool] = None,
+        reminder_30m_enabled: Optional[bool] = None
+    ) -> Optional[User]:
+        """
+        Update user's reminder preferences
+        """
+        user = await self.get_by_telegram_id(telegram_id)
+        if not user:
+            return None
+        
+        if reminder_3h_enabled is not None:
+            user.reminder_3h_enabled = reminder_3h_enabled
+        if reminder_1h_enabled is not None:
+            user.reminder_1h_enabled = reminder_1h_enabled
+        if reminder_30m_enabled is not None:
+            user.reminder_30m_enabled = reminder_30m_enabled
+        
+        await self.session.flush()
+        await self.session.refresh(user)
         return user
     
     async def update_role(self, telegram_id: int, role: UserRole) -> Optional[User]:

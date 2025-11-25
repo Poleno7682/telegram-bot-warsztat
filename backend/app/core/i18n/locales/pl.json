@@ -37,6 +37,7 @@
       "manage_users": "👥 Zarządzaj użytkownikami",
       "manage_mechanics": "🔧 Zarządzaj mechanikami",
       "manage_services": "🛠️ Zarządzaj usługami",
+      "calendar": "📆 Kalendarz rezerwacji",
       "manage_settings": "⚙️ Ustawienia serwisu",
       "statistics": "📊 Statystyki"
     },
@@ -44,7 +45,9 @@
       "title": "🔧 Panel mechanika",
       "pending_bookings": "⏳ Oczekujące rezerwacje",
       "my_bookings": "📅 Moje rezerwacje",
-      "manage_services": "🛠️ Zarządzaj usługami"
+      "manage_services": "🛠️ Zarządzaj usługami",
+      "add_service": "➕ Dodaj usługę",
+      "calendar": "📆 Kalendarz rezerwacji"
     }
   },
   
@@ -73,7 +76,13 @@
       "new_booking": "🔔 Nowa rezerwacja!\n\n👤 Utworzona przez: {user_name}\n🚗 Pojazd: {brand} {model}\n📝 Nr rej: {number}\n👤 Klient: {client_name}\n📞 Telefon: {client_phone}\n🛠️ Usługa: {service}\n📅 Data: {date}\n🕐 Godzina: {time}\n\n💬 Opis:\n{description}",
       "accepted": "✅ Rezerwacja zaakceptowana!\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
       "rejected": "❌ Rezerwacja odrzucona\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
-      "time_change": "⏰ Propozycja zmiany terminu\n\n🔧 Mechanik: {mechanic_name}\n📅 Nowy termin: {date} {time}\n\n📋 Szczegóły:\n{details}"
+      "time_change": "⏰ Propozycja zmiany terminu\n\n🔧 Mechanik: {mechanic_name}\n📅 Nowy termin: {date} {time}\n\n📋 Szczegóły:\n{details}",
+      "reminder": "⏰ Przypomnienie: rezerwacja {time_left}\n\n{details}"
+    },
+    "reminder": {
+      "time_left_3h": "za 3 godziny",
+      "time_left_1h": "za 1 godzinę",
+      "time_left_30m": "za 30 minut"
     },
     "actions": {
       "accept": "✅ Akceptuj",
@@ -110,6 +119,26 @@
     "user_not_found": "❌ Użytkownik nie znaleziony.",
     "invalid_id": "❌ Nieprawidłowe ID Telegram."
   },
+
+  "calendar": {
+    "title": "📆 Kalendarz rezerwacji",
+    "select_day": "Wybierz dzień, aby zobaczyć rezerwacje:",
+    "today": "📅 Dziś",
+    "tomorrow": "📆 Jutro",
+    "day_overview": "📅 Rezerwacje na {date}:",
+    "no_bookings": "Brak rezerwacji na {date}.",
+    "no_available_days": "Brak rezerwacji w nadchodzących dniach.",
+    "entry": "{time} • {service}\n👤 {client}\n☎️ {phone}\n🔧 {mechanic}\n⚙️ {status}",
+    "unassigned": "brak mechanika",
+    "status": {
+      "pending": "Oczekuje",
+      "negotiating": "Negocjowana",
+      "accepted": "Potwierdzona",
+      "rejected": "Odrzucona",
+      "completed": "Zakończona",
+      "cancelled": "Anulowana"
+    }
+  },
   
   "service_management": {
     "title": "🛠️ Zarządzanie usługami",
@@ -140,7 +169,15 @@
     "language_changed": "✅ Język zmieniony na: {language}",
     "role_user": "Użytkownik",
     "role_mechanic": "Mechanik",
-    "role_admin": "Administrator"
+    "role_admin": "Administrator",
+    "reminders_button": "⏰ Przypomnienia mechanika",
+    "reminders_info": "Wybierz, które przypomnienia mają być aktywne:\n\n• 3h przed: {status_3h}\n• 1h przed: {status_1h}\n• 30 min przed: {status_30m}",
+    "reminders_on": "Włączone",
+    "reminders_off": "Wyłączone",
+    "reminders_3h": "3 godziny przed: {status}",
+    "reminders_1h": "1 godzina przed: {status}",
+    "reminders_30m": "30 minut przed: {status}",
+    "language_not_set": "Nie ustawiono"
   },
   
   "settings": {

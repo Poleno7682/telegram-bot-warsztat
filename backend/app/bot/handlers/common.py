@@ -22,9 +22,17 @@ router = Router(name="common")
 def _build_menu_payload(user: User) -> tuple[str, InlineKeyboardMarkup]:
     """Build menu text and keyboard for given user"""
     from app.core.i18n import get_text
+    from app.config.settings import get_settings
+    
+    # Use user's language or fallback to first supported language
+    if user.language:
+        language = user.language
+    else:
+        settings = get_settings()
+        language = settings.supported_languages_list[0] if settings.supported_languages_list else "pl"
     
     def _(key: str, **kwargs) -> str:
-        return get_text(key, user.language, **kwargs)
+        return get_text(key, language, **kwargs)
     
     if user.role == UserRole.ADMIN:
         menu_text = _("menu.admin.title")

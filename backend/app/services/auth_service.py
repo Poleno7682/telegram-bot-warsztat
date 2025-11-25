@@ -28,7 +28,7 @@ class AuthService:
         username: Optional[str] = None,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
-        language: str = "pl"
+        language: Optional[str] = None
     ) -> Tuple[User, bool]:
         """
         Get existing user or create new one
@@ -56,14 +56,14 @@ class AuthService:
         # Check if user should be auto-assigned a role from env
         role = await self._determine_initial_role(telegram_id)
         
-        # Create new user
+        # Create new user (without language - will be set by user later)
         user = await self.user_repo.create_or_update_user(
             telegram_id=telegram_id,
             username=username,
             first_name=first_name,
             last_name=last_name,
             role=role,
-            language=language
+            language=None  # Language will be set by user during first /start
         )
         await self.session.commit()
         
@@ -224,6 +224,7 @@ class AuthService:
     async def add_user_role(self, telegram_id: int, role: UserRole) -> Optional[User]:
         """
         Add user with specified role or update existing user's role
+        Language will remain None and will be set by user during first /start
         
         Args:
             telegram_id: Telegram user ID
@@ -240,11 +241,12 @@ class AuthService:
             user.role = role
             user.is_active = True
         else:
-            # Create new user with role
+            # Create new user with role (language will be None - set by user later)
             user = await self.user_repo.create(
                 telegram_id=telegram_id,
                 role=role,
-                is_active=True
+                is_active=True,
+                language=None  # Language will be set by user during first /start
             )
         
         await self.session.commit()

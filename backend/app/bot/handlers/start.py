@@ -49,7 +49,11 @@ async def cmd_start(
     
     # If new user or no language set, show language selection
     if is_new or not user.language:
-        welcome_text = get_text("start.welcome", "pl")
+        # Use first supported language as fallback for welcome message
+        from app.config.settings import get_settings
+        settings = get_settings()
+        fallback_lang = settings.supported_languages_list[0] if settings.supported_languages_list else "pl"
+        welcome_text = get_text("start.welcome", fallback_lang)
         await message.answer(
             welcome_text,
             reply_markup=get_language_keyboard()

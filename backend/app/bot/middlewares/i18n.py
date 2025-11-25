@@ -34,7 +34,13 @@ class I18nMiddleware(BaseMiddleware):
         """
         # Get user from data (injected by AuthMiddleware)
         user: User = data.get("user")
-        language = user.language if user else "pl"
+        # Use user's language or fallback to first supported language
+        if user and user.language:
+            language = user.language
+        else:
+            from app.config.settings import get_settings
+            settings = get_settings()
+            language = settings.supported_languages_list[0] if settings.supported_languages_list else "pl"
         
         # Create helper function for getting text
         def _(key: str, **kwargs) -> str:

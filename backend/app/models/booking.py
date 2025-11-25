@@ -81,6 +81,11 @@ class Booking(Base, TimestampMixin):
     # Notes from mechanic
     mechanic_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
+    # Reminder flags
+    reminder_3h_sent: Mapped[bool] = mapped_column(default=False, nullable=False)
+    reminder_1h_sent: Mapped[bool] = mapped_column(default=False, nullable=False)
+    reminder_30m_sent: Mapped[bool] = mapped_column(default=False, nullable=False)
+    
     # Relationships
     creator: Mapped["User"] = relationship(
         "User",

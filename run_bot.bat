@@ -15,10 +15,6 @@ if not exist "backend\venv\Scripts\activate.bat" (
     exit /b 1
 )
 
-REM Activate virtual environment
-echo [INFO] Activating virtual environment...
-call backend\venv\Scripts\activate.bat
-
 REM Check if .env exists
 if not exist "backend\.env" (
     echo [ERROR] Configuration file .env not found!
