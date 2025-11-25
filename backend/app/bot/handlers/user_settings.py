@@ -42,11 +42,13 @@ def get_language_display_name(language: str | None) -> str:
     Get language display name
     
     Args:
-        language: Language code
+        language: Language code (can be None)
         
     Returns:
-        Language name
+        Language name or "Not set" message
     """
+    if not language:
+        return "❌ Не установлен / Nie ustawiono"
     language_map = {
         "pl": "Polski 🇵🇱",
         "ru": "Русский 🇷🇺"
