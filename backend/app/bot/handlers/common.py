@@ -186,32 +186,6 @@ async def cmd_menu(message: TelegramMessage, user: User):
     await show_main_menu(message, user)
 
 
-async def safe_callback_answer(
-    callback: CallbackQuery,
-    text: str | None = None,
-    show_alert: bool = False
-) -> None:
-    """
-    Safely answer callback query, ignoring errors for old queries
-    
-    Args:
-        callback: Callback query to answer
-        text: Optional text to show
-        show_alert: Whether to show as alert
-    """
-    try:
-        await callback.answer(text=text, show_alert=show_alert)
-    except TelegramBadRequest as e:
-        # Ignore errors for old queries or invalid query IDs
-        error_msg = str(e).lower()
-        if "query is too old" in error_msg or "query id is invalid" in error_msg or "response timeout expired" in error_msg:
-            # Query is too old, silently ignore
-            pass
-        else:
-            # Re-raise other errors
-            raise
-
-
 @router.callback_query(F.data == "menu:main")
 async def callback_main_menu(callback: CallbackQuery, user: User):
     """
