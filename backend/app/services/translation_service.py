@@ -147,7 +147,11 @@ class TranslationService:
             # Fallback: return original text
             return text
         except Exception as e:
-            logger.error(f"Translation error ({source_lang} -> {target_lang}): {e}")
+            # Rate limit error logging to prevent spam
+            # Use a dummy chat_id (0) for global translation error rate limiting
+            if await self._rate_limiter.is_allowed(0):
+                logger.error(f"Translation error ({source_lang} -> {target_lang}): {e}")
+                await self._rate_limiter.record_message(0)
             # Fallback: return original text
             return text
     
