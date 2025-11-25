@@ -47,11 +47,16 @@ async def start_new_booking(
         await callback.answer()
         return
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     # Show services with clean menu
     await send_clean_menu(
         callback=callback,
         text=_("booking.create.select_service"),
-        reply_markup=get_services_keyboard(services, user.language, _)
+        reply_markup=get_services_keyboard(services, language, _)
     )
     await state.set_state(BookingStates.selecting_service)
     await callback.answer()
@@ -79,11 +84,16 @@ async def service_selected(
     time_service = TimeService(session)
     dates = await time_service.get_available_dates()
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     # Show dates
     if isinstance(callback.message, TelegramMessage):
         await callback.message.edit_text(
             _("booking.create.select_date"),
-            reply_markup=get_dates_keyboard(dates, user.language)
+            reply_markup=get_dates_keyboard(dates, language)
         )
     await state.set_state(BookingStates.selecting_date)
     await callback.answer()
@@ -143,11 +153,16 @@ async def date_selected(
     # Save date
     await state.update_data(booking_date=date_str)
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     # Show times
     if isinstance(callback.message, TelegramMessage):
         await callback.message.edit_text(
             _("booking.create.select_time"),
-            reply_markup=get_times_keyboard(available_times, user.language)
+            reply_markup=get_times_keyboard(available_times, language)
         )
     await state.set_state(BookingStates.selecting_time)
     await callback.answer()
@@ -252,6 +267,11 @@ async def description_entered(
     from app.core.timezone_utils import ensure_utc
     booking_datetime = ensure_utc(booking_datetime)
     
+    # Get language with fallback for booking creation
+    from app.config.settings import get_settings
+    settings = get_settings()
+    booking_language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     booking, msg = await booking_service.create_booking(
         creator_telegram_id=user.telegram_id,
         service_id=service_id,
@@ -261,7 +281,7 @@ async def description_entered(
         client_name=data["client_name"],
         client_phone=data["client_phone"],
         description=description,
-        language=user.language,
+        language=booking_language,
         booking_datetime=booking_datetime
     )
     
@@ -271,16 +291,21 @@ async def description_entered(
     if booking:
         # Format confirmation message
         time_service = TimeService(session)
+        # Get language with fallback
+        from app.config.settings import get_settings
+        settings = get_settings()
+        language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+        
         details = _("booking.confirm.details").format(
             brand=booking.car_brand,
             model=booking.car_model,
             number=booking.car_number,
             client_name=booking.client_name,
             client_phone=booking.client_phone,
-            service=booking.service.get_name(user.language),
-            date=time_service.format_date(booking.booking_date.date(), user.language),
+            service=booking.service.get_name(language),
+            date=time_service.format_date(booking.booking_date.date(), language),
             time=time_service.format_time(booking.booking_date),
-            description=booking.get_description(user.language)
+            description=booking.get_description(language)
         )
         
         await message.answer(details)
@@ -332,7 +357,10 @@ async def show_my_bookings(
     text = _("booking.my_bookings.title") + "\n\n"
     
     from app.services.time_service import TimeService
+    from app.config.settings import get_settings
     time_service = TimeService(session)
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     for booking in bookings:
         status_emoji = {
@@ -342,9 +370,9 @@ async def show_my_bookings(
             BookingStatus.CANCELLED: "🚫"
         }.get(booking.status, "❓")
         
-        text += f"{status_emoji} {time_service.format_date(booking.booking_date.date(), user.language)} "
+        text += f"{status_emoji} {time_service.format_date(booking.booking_date.date(), language)} "
         text += f"{time_service.format_time(booking.booking_date)}\n"
-        text += f"   🛠️ {booking.service.get_name(user.language)}\n"
+        text += f"   🛠️ {booking.service.get_name(language)}\n"
         text += f"   🚗 {booking.car_brand} {booking.car_model}\n"
         if booking.status == BookingStatus.ACCEPTED and booking.mechanic:
             text += f"   🔧 {booking.mechanic.get_display_name()}\n"
