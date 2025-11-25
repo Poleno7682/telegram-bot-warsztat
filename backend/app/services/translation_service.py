@@ -9,6 +9,7 @@ from deep_translator import GoogleTranslator
 from app.config.settings import get_settings
 from app.core.rate_limiter import get_translation_rate_limiter
 from app.core.logging_config import get_logger
+from app.core.metrics import get_metrics_collector
 
 
 logger = get_logger(__name__)
@@ -139,18 +140,31 @@ class TranslationService:
             if use_cache and cache_key is not None:
                 self._cache.set(cache_key, translated)
             
-            logger.debug(f"Translation successful: {source_lang} -> {target_lang}")
+            # Record metrics
+            metrics = get_metrics_collector()
+            await metrics.increment("translations.success")
+            await metrics.increment(f"translations.{source_lang}.{target_lang}")
+            
+            logger.debug("Translation successful", source_lang=source_lang, target_lang=target_lang)
             return translated
             
         except asyncio.TimeoutError:
-            logger.warning(f"Translation timeout: {source_lang} -> {target_lang}")
+            # Record metrics
+            metrics = get_metrics_collector()
+            await metrics.increment("translations.timeout")
+            
+            logger.warning("Translation timeout", source_lang=source_lang, target_lang=target_lang)
             # Fallback: return original text
             return text
         except Exception as e:
+            # Record metrics
+            metrics = get_metrics_collector()
+            await metrics.increment("translations.error")
+            
             # Rate limit error logging to prevent spam
             # Use a dummy chat_id (0) for global translation error rate limiting
             if await self._rate_limiter.is_allowed(0):
-                logger.error(f"Translation error ({source_lang} -> {target_lang}): {e}")
+                logger.error("Translation error", source_lang=source_lang, target_lang=target_lang, error=str(e), exc_info=True)
                 await self._rate_limiter.record_message(0)
             # Fallback: return original text
             return text

@@ -104,6 +104,7 @@ async def main():
     # Register routers
     dp.include_router(start.router)
     dp.include_router(common.router)
+    dp.include_router(health.router)
     dp.include_router(user_settings.router)
     dp.include_router(calendar.router)
     dp.include_router(booking.router)

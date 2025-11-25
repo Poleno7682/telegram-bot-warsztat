@@ -12,6 +12,7 @@ from app.config.database import AsyncSessionLocal
 from app.repositories.booking import BookingRepository
 from app.services.notification_service import NotificationService
 from app.core.logging_config import get_logger
+from app.core.metrics import get_metrics_collector
 
 
 @dataclass(frozen=True)
@@ -176,6 +177,11 @@ class ReminderScheduler:
                                 setattr(booking, rule.sent_attr, True)
                                 updated = True
                                 reminders_sent += 1
+                                
+                                # Record metric
+                                metrics = get_metrics_collector()
+                                await metrics.increment("reminders.sent")
+                                await metrics.increment(f"reminders.sent.{rule.label_key}")
                             except Exception as e:
                                 self.logger.error(
                                     "Failed to send reminder",
