@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from app.models.user import User
+from app.models.user import User, LANGUAGE_UNSET
 from app.services.booking_service import BookingService
 from app.services.time_service import TimeService
 from app.services.service_management_service import ServiceManagementService

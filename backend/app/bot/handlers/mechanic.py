@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, Message as Telegr
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
+from app.models.user import User, LANGUAGE_UNSET
 from app.services.booking_service import BookingService
 from app.services.time_service import TimeService
 from app.services.notification_service import NotificationService

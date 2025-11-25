@@ -110,9 +110,9 @@ async def service_name_entered(
 
     progress_msg = await message.answer(_("service_management.translating"))
 
-    from app.services.translation_service import TranslationService
+    from app.services.translation_service import translate_to_all_languages
 
-    translations = await TranslationService.translate_to_all_languages(
+    translations = await translate_to_all_languages(
         text=message.text,
         source_lang=source_lang,
     )
