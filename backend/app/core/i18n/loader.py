@@ -9,7 +9,7 @@ from typing import Dict, Optional
 class I18nLoader:
     """Loader for internationalization translations"""
     
-    def __init__(self, locales_dir: str = None):
+    def __init__(self, locales_dir: Optional[str] = None):
         """
         Initialize I18n Loader
         
