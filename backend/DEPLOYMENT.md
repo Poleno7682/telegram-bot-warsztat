@@ -149,7 +149,7 @@ DATABASE_URL=postgresql+asyncpg://bot_user:your_secure_password@localhost:5432/t
 
 ```bash
 cd /opt/telegram-bot/backend
-sudo -u bot venv/bin/alembic upgrade head
+sudo -u bot python3 -m alembic upgrade head
 ```
 
 ## Управление сервисом

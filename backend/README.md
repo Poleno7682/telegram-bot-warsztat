@@ -96,19 +96,12 @@ git clone <repository-url>
 cd backend
 ```
 
-### 2. Создание виртуального окружения
+### 2. Установка зависимостей
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# или
-venv\Scripts\activate  # Windows
-```
-
-### 3. Установка зависимостей
-
-```bash
-pip install -r requirements.txt
+# Linux/Mac (без venv)
+python3 -m pip install --upgrade pip --user
+python3 -m pip install -r requirements.txt --user
 ```
 
 ### 4. Настройка окружения
