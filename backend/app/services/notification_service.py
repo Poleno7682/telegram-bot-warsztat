@@ -29,7 +29,6 @@ class NotificationService:
         self.session = session
         self.bot = bot
         self.user_repo = UserRepository(session)
-        self.time_service = TimeService(session)
         self.rate_limiter = get_notification_rate_limiter()
     
     async def notify_mechanics_new_booking(self, booking: Booking) -> None:
@@ -136,8 +135,8 @@ class NotificationService:
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(lang),
-            date=self.time_service.format_date(booking.booking_date.date(), lang),
-            time=self.time_service.format_time(booking.booking_date),
+            date=TimeService.format_date(booking.booking_date, lang),
+            time=TimeService.format_time(booking.booking_date),
             description=booking.get_description(lang)
         )
         
@@ -181,8 +180,8 @@ class NotificationService:
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(lang),
-            date=self.time_service.format_date(booking.booking_date.date(), lang),
-            time=self.time_service.format_time(booking.booking_date),
+            date=TimeService.format_date(booking.booking_date, lang),
+            time=TimeService.format_time(booking.booking_date),
             description=booking.get_description(lang)
         )
         
@@ -221,8 +220,8 @@ class NotificationService:
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(lang),
-            date=self.time_service.format_date(booking.booking_date.date(), lang),
-            time=self.time_service.format_time(booking.booking_date),
+            date=TimeService.format_date(booking.booking_date, lang),
+            time=TimeService.format_time(booking.booking_date),
             description=booking.get_description(lang)
         )
         
@@ -261,8 +260,8 @@ class NotificationService:
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(lang),
-            date=self.time_service.format_date(booking.booking_date.date(), lang),
-            time=self.time_service.format_time(booking.booking_date),
+            date=TimeService.format_date(booking.booking_date, lang),
+            time=TimeService.format_time(booking.booking_date),
             description=booking.get_description(lang)
         )
         
@@ -304,15 +303,15 @@ class NotificationService:
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(lang),
-            date=self.time_service.format_date(booking.proposed_date.date(), lang),
-            time=self.time_service.format_time(booking.proposed_date),
+            date=TimeService.format_date(booking.proposed_date, lang),
+            time=TimeService.format_time(booking.proposed_date),
             description=booking.get_description(lang)
         )
         
         notification = get_text("booking.notification.time_change", lang).format(
             mechanic_name=mechanic.full_name,
-            date=self.time_service.format_date(booking.proposed_date.date(), lang),
-            time=self.time_service.format_time(booking.proposed_date),
+            date=TimeService.format_date(booking.proposed_date, lang),
+            time=TimeService.format_time(booking.proposed_date),
             details=details_text
         )
         

@@ -290,7 +290,6 @@ async def description_entered(
     
     if booking:
         # Format confirmation message
-        time_service = TimeService(session)
         # Get language with fallback
         from app.config.settings import get_settings
         settings = get_settings()
@@ -303,8 +302,8 @@ async def description_entered(
             client_name=booking.client_name,
             client_phone=booking.client_phone,
             service=booking.service.get_name(language),
-            date=time_service.format_date(booking.booking_date.date(), language),
-            time=time_service.format_time(booking.booking_date),
+            date=TimeService.format_date(booking.booking_date, language),
+            time=TimeService.format_time(booking.booking_date),
             description=booking.get_description(language)
         )
         
@@ -358,7 +357,6 @@ async def show_my_bookings(
     
     from app.services.time_service import TimeService
     from app.config.settings import get_settings
-    time_service = TimeService(session)
     settings = get_settings()
     language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
@@ -370,8 +368,8 @@ async def show_my_bookings(
             BookingStatus.CANCELLED: "🚫"
         }.get(booking.status, "❓")
         
-        text += f"{status_emoji} {time_service.format_date(booking.booking_date.date(), language)} "
-        text += f"{time_service.format_time(booking.booking_date)}\n"
+        text += f"{status_emoji} {TimeService.format_date(booking.booking_date, language)} "
+        text += f"{TimeService.format_time(booking.booking_date)}\n"
         text += f"   🛠️ {booking.service.get_name(language)}\n"
         text += f"   🚗 {booking.car_brand} {booking.car_model}\n"
         if booking.status == BookingStatus.ACCEPTED and booking.mechanic:

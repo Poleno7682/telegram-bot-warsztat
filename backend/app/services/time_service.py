@@ -217,17 +217,33 @@ class TimeService:
         return True
     
     @staticmethod
-    def format_date(target_date: date, language: str = "pl") -> str:
+    def format_date(target_datetime: datetime | date, language: str = "pl") -> str:
         """
-        Format date with day of week
+        Format date with day of week from UTC datetime or date
         
         Args:
-            target_date: Date to format
+            target_datetime: UTC datetime or date to format
             language: Language code
             
         Returns:
-            Formatted date string
+            Formatted date string in local timezone
         """
+        from app.config.settings import get_settings
+        
+        # If it's a date object, use it directly
+        if isinstance(target_datetime, date):
+            target_date = target_datetime
+        else:
+            # It's a datetime - convert UTC to local timezone
+            settings = get_settings()
+            tz = pytz.timezone(settings.timezone)
+            
+            if target_datetime.tzinfo is None:
+                # Assume UTC if naive
+                target_datetime = pytz.UTC.localize(target_datetime)
+            local_datetime = target_datetime.astimezone(tz)
+            target_date = local_datetime.date()
+        
         weekdays_pl = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"]
         weekdays_ru = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
         
@@ -239,13 +255,24 @@ class TimeService:
     @staticmethod
     def format_time(target_time: datetime) -> str:
         """
-        Format time
+        Format time from UTC datetime to local timezone
         
         Args:
-            target_time: Time to format
+            target_time: UTC datetime to format
             
         Returns:
-            Formatted time string (HH:MM)
+            Formatted time string (HH:MM) in local timezone
         """
-        return target_time.strftime("%H:%M")
+        from app.config.settings import get_settings
+        
+        settings = get_settings()
+        tz = pytz.timezone(settings.timezone)
+        
+        # Convert UTC to local timezone
+        if target_time.tzinfo is None:
+            # Assume UTC if naive
+            target_time = pytz.UTC.localize(target_time)
+        local_time = target_time.astimezone(tz)
+        
+        return local_time.strftime("%H:%M")
 
