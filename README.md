@@ -232,6 +232,20 @@ python run_bot.py
 
 ## 📦 Deployment
 
+### Требования к серверу
+
+**Минимальные требования:**
+- RAM: 512MB
+- Disk: 5GB
+- CPU: 1 core
+- OS: Linux (Ubuntu 20.04+, Debian 11+, Alpine 3.15+)
+
+**Рекомендуемые требования:**
+- RAM: 2GB+
+- Disk: 20GB+
+- CPU: 2+ cores
+- OS: Ubuntu 22.04 LTS или Debian 12
+
 ### VPS (Linux)
 
 ```bash
