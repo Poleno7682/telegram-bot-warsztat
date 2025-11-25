@@ -42,7 +42,15 @@ class NotificationService:
         mechanics = await self.user_repo.get_all_mechanics()
         
         for mechanic in mechanics:
-            await self._send_new_booking_notification(mechanic, booking)
+            # Check rate limit before sending
+            if await self.rate_limiter.is_allowed(mechanic.telegram_id):
+                await self._send_new_booking_notification(mechanic, booking)
+                await self.rate_limiter.record_message(mechanic.telegram_id)
+            else:
+                logger.warning(
+                    f"Rate limit exceeded for mechanic {mechanic.telegram_id}, "
+                    f"skipping new booking notification"
+                )
     
     async def notify_booking_accepted(self, booking: Booking, mechanic: User) -> None:
         """
@@ -175,9 +183,18 @@ class NotificationService:
         )
         
         try:
+            # Check rate limit before sending
+            if not await self.rate_limiter.is_allowed(mechanic.telegram_id):
+                logger.warning(
+                    f"Rate limit exceeded for mechanic {mechanic.telegram_id}, "
+                    f"skipping reminder notification"
+                )
+                return
+            
             await self.bot.send_message(mechanic.telegram_id, notification)
+            await self.rate_limiter.record_message(mechanic.telegram_id)
         except Exception as e:
-            print(f"Failed to send reminder to mechanic {mechanic.telegram_id}: {e}")
+            logger.error(f"Failed to send reminder to mechanic {mechanic.telegram_id}: {e}")
     
     async def _send_booking_accepted_notification(
         self,
@@ -206,9 +223,18 @@ class NotificationService:
         )
         
         try:
+            # Check rate limit before sending
+            if not await self.rate_limiter.is_allowed(user.telegram_id):
+                logger.warning(
+                    f"Rate limit exceeded for user {user.telegram_id}, "
+                    f"skipping notification"
+                )
+                return
+            
             await self.bot.send_message(user.telegram_id, notification)
+            await self.rate_limiter.record_message(user.telegram_id)
         except Exception as e:
-            print(f"Failed to notify user {user.telegram_id}: {e}")
+            logger.error(f"Failed to notify user {user.telegram_id}: {e}")
     
     async def _send_booking_rejected_notification(
         self,
@@ -237,9 +263,18 @@ class NotificationService:
         )
         
         try:
+            # Check rate limit before sending
+            if not await self.rate_limiter.is_allowed(user.telegram_id):
+                logger.warning(
+                    f"Rate limit exceeded for user {user.telegram_id}, "
+                    f"skipping notification"
+                )
+                return
+            
             await self.bot.send_message(user.telegram_id, notification)
+            await self.rate_limiter.record_message(user.telegram_id)
         except Exception as e:
-            print(f"Failed to notify user {user.telegram_id}: {e}")
+            logger.error(f"Failed to notify user {user.telegram_id}: {e}")
     
     async def _send_time_change_notification(
         self,
@@ -278,11 +313,20 @@ class NotificationService:
             def _(key: str, **kwargs) -> str:
                 return get_text(key, lang, **kwargs)
             
+            # Check rate limit before sending
+            if not await self.rate_limiter.is_allowed(user.telegram_id):
+                logger.warning(
+                    f"Rate limit exceeded for user {user.telegram_id}, "
+                    f"skipping time change notification"
+                )
+                return
+            
             await self.bot.send_message(
                 user.telegram_id,
                 notification,
                 reply_markup=get_confirmation_keyboard(booking.id, _, show_change_time=True)
             )
+            await self.rate_limiter.record_message(user.telegram_id)
         except Exception as e:
-            print(f"Failed to notify user {user.telegram_id}: {e}")
+            logger.error(f"Failed to notify user {user.telegram_id}: {e}")
 
