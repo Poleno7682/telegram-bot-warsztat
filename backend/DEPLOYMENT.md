@@ -194,7 +194,7 @@ cd backend
 sudo -u bot python3 -m pip install -r requirements.txt --user
 
 # Запустить миграции (если есть)
-sudo -u bot venv/bin/alembic upgrade head
+sudo -u bot python3 -m alembic upgrade head
 
 # Запустить бота
 sudo systemctl start telegram-bot
