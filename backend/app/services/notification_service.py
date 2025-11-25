@@ -147,13 +147,22 @@ class NotificationService:
             def _(key: str, **kwargs) -> str:
                 return get_text(key, lang, **kwargs)
             
+            # Check rate limit before sending
+            if not await self.rate_limiter.is_allowed(user.telegram_id):
+                logger.warning(
+                    f"Rate limit exceeded for user {user.telegram_id}, "
+                    f"skipping new booking notification"
+                )
+                return
+            
             await self.bot.send_message(
                 user.telegram_id,
                 notification,
                 reply_markup=get_booking_actions_keyboard(booking.id, _)
             )
+            await self.rate_limiter.record_message(user.telegram_id)
         except Exception as e:
-            print(f"Failed to notify user {user.telegram_id}: {e}")
+            logger.error(f"Failed to notify user {user.telegram_id}: {e}")
 
     async def notify_mechanic_reminder(
         self,
