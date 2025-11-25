@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.handlers.common import send_clean_menu
 from app.bot.keyboards.inline import get_cancel_keyboard, get_settings_keyboard
 from app.bot.states.booking import SettingsStates
-from app.repositories.settings import SettingsRepository
+from app.services.settings_management_service import SettingsManagementService
 
 router = Router(name="admin-settings")
 
@@ -22,8 +22,8 @@ async def settings_menu(
     _: Callable[[str], str],
 ):
     """Show settings menu."""
-    settings_repo = SettingsRepository(session)
-    settings = await settings_repo.get_settings()
+    settings_mgmt = SettingsManagementService(session)
+    settings = await settings_mgmt.get_settings()
 
     text = f"""
 {_("settings.title")}
@@ -97,13 +97,11 @@ async def work_end_entered(
         work_end = datetime.strptime(message.text.strip(), "%H:%M").time()
         data = await state.get_data()
 
-        settings_repo = SettingsRepository(session)
-        settings = await settings_repo.get_settings()
-
-        settings.work_start_time = data["work_start"]
-        settings.work_end_time = work_end
-
-        await session.commit()
+        settings_mgmt = SettingsManagementService(session)
+        await settings_mgmt.update_work_hours(
+            start_time=data["work_start"],
+            end_time=work_end
+        )
         await message.answer(_("settings.settings_updated"))
         await state.clear()
     except ValueError:
@@ -143,11 +141,8 @@ async def time_step_entered(
         if time_step <= 0:
             raise ValueError()
 
-        settings_repo = SettingsRepository(session)
-        settings = await settings_repo.get_settings()
-        settings.time_step_minutes = time_step
-
-        await session.commit()
+        settings_mgmt = SettingsManagementService(session)
+        await settings_mgmt.update_time_step(time_step)
         await message.answer(_("settings.settings_updated"))
         await state.clear()
     except ValueError:
@@ -187,11 +182,8 @@ async def buffer_time_entered(
         if buffer_time < 0:
             raise ValueError()
 
-        settings_repo = SettingsRepository(session)
-        settings = await settings_repo.get_settings()
-        settings.buffer_time_minutes = buffer_time
-
-        await session.commit()
+        settings_mgmt = SettingsManagementService(session)
+        await settings_mgmt.update_buffer_time(buffer_time)
         await message.answer(_("settings.settings_updated"))
         await state.clear()
     except ValueError:

@@ -4,7 +4,7 @@
 
 ## 1. Структуризация модулей и слой сервисов
 - [x] 1.1 Разбить `backend/app/bot/handlers/admin.py` на отдельные файлы (`users.py`, `mechanics.py`, `services.py`, `settings.py`) с регистрацией в `handlers/__init__.py`.
-- [ ] 1.2 Создать сервисный слой (`backend/app/services/user_management.py`, `service_management.py`, и т.п.) и перевести хэндлеры на использование сервисов вместо прямых репозиториев.
+- [x] 1.2 Создать сервисный слой (`backend/app/services/service_management_service.py`, `settings_management_service.py`) и перевести хэндлеры на использование сервисов вместо прямых репозиториев.
 
 ## 2. Конфигурация и DI
 - [ ] 2.1 Вынести список поддерживаемых языков в конфиг (`Settings` или отдельный модуль) и использовать его во всех клавиатурах/переводах.

@@ -16,7 +16,7 @@ from app.bot.keyboards.inline import (
 )
 from app.bot.states.booking import AddServiceStates
 from app.models.user import User
-from app.repositories.service import ServiceRepository
+from app.services.service_management_service import ServiceManagementService
 
 router = Router(name="admin-services")
 
@@ -43,8 +43,8 @@ async def list_services(
     _: Callable[[str], str],
 ):
     """Show list of services."""
-    service_repo = ServiceRepository(session)
-    services = await service_repo.get_all_active()
+    service_mgmt = ServiceManagementService(session)
+    services = await service_mgmt.get_all_active_services()
 
     if not services:
         await send_clean_menu(
@@ -237,16 +237,12 @@ async def service_duration_entered(
 
     data = await state.get_data()
 
-    service_repo = ServiceRepository(session)
-
-    service = await service_repo.create(
+    service_mgmt = ServiceManagementService(session)
+    service = await service_mgmt.create_service(
         name_pl=data["name_pl"],
         name_ru=data["name_ru"],
         duration_minutes=duration,
-        is_active=True,
     )
-
-    await session.commit()
 
     if service:
         await message.answer(_("service_management.service_added"))
@@ -268,8 +264,8 @@ async def edit_service(
 
     service_id = int(callback.data.split(":")[2])
 
-    service_repo = ServiceRepository(session)
-    service = await service_repo.get_by_id(service_id)
+    service_mgmt = ServiceManagementService(session)
+    service = await service_mgmt.get_service_by_id(service_id)
 
     if not service:
         await callback.answer(_("errors.service_not_found"), show_alert=True)
@@ -303,15 +299,12 @@ async def delete_service(
 
     service_id = int(callback.data.split(":")[2])
 
-    service_repo = ServiceRepository(session)
-    service = await service_repo.get_by_id(service_id)
+    service_mgmt = ServiceManagementService(session)
+    success = await service_mgmt.delete_service(service_id)
 
-    if not service:
+    if not success:
         await callback.answer(_("errors.service_not_found"), show_alert=True)
         return
-
-    service.is_active = False
-    await session.commit()
 
     await send_clean_menu(
         callback=callback,

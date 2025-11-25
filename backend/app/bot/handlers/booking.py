@@ -11,7 +11,7 @@ from datetime import datetime
 from app.models.user import User
 from app.services.booking_service import BookingService
 from app.services.time_service import TimeService
-from app.repositories.service import ServiceRepository
+from app.services.service_management_service import ServiceManagementService
 from app.bot.states.booking import BookingStates
 from app.bot.keyboards.inline import (
     get_services_keyboard,
@@ -35,8 +35,8 @@ async def start_new_booking(
     from app.bot.handlers.common import send_clean_menu
     
     # Get all active services
-    service_repo = ServiceRepository(session)
-    services = await service_repo.get_all_active()
+    service_mgmt = ServiceManagementService(session)
+    services = await service_mgmt.get_all_active_services()
     
     if not services:
         await send_clean_menu(
@@ -117,8 +117,8 @@ async def date_selected(
         return
     
     # Get service
-    service_repo = ServiceRepository(session)
-    service = await service_repo.get_by_id(service_id)
+    service_mgmt = ServiceManagementService(session)
+    service = await service_mgmt.get_service_by_id(service_id)
     
     if not service:
         if isinstance(callback.message, TelegramMessage):
