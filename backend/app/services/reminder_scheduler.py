@@ -178,13 +178,21 @@ class ReminderScheduler:
                                 reminders_sent += 1
                             except Exception as e:
                                 self.logger.error(
-                                    f"Failed to send reminder for booking {booking.id}, "
-                                    f"rule {rule.label_key}: {e}"
+                                    "Failed to send reminder",
+                                    booking_id=booking.id,
+                                    rule=rule.label_key,
+                                    error=str(e),
+                                    exc_info=True
                                 )
                                 # Continue with next rule/booking
                                 continue
                     except Exception as e:
-                        self.logger.error(f"Error processing booking {booking.id}: {e}")
+                        self.logger.error(
+                            "Error processing booking",
+                            booking_id=booking.id,
+                            error=str(e),
+                            exc_info=True
+                        )
                         # Continue with next booking
                         continue
                 
