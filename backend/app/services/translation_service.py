@@ -5,6 +5,8 @@ from typing import Dict, Optional
 from functools import lru_cache
 from deep_translator import GoogleTranslator
 
+from app.config.settings import get_settings
+
 
 class TranslationService:
     """Service for translating text between languages (SRP)"""
@@ -77,13 +79,14 @@ class TranslationService:
         Args:
             text: Text to translate
             source_lang: Source language code
-            target_languages: List of target language codes (default: ["pl", "ru"])
+            target_languages: List of target language codes (default: from settings)
             
         Returns:
             Dictionary with language codes as keys and translations as values
         """
         if target_languages is None:
-            target_languages = ["pl", "ru"]
+            settings = get_settings()
+            target_languages = settings.supported_languages_list
         
         translations = {}
         

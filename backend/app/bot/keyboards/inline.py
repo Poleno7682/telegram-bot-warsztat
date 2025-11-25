@@ -1,21 +1,43 @@
 """Inline keyboards for the bot"""
 
 from typing import List, Callable
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.service import Service
+from app.config.settings import get_settings
+
+
+# Language display names mapping
+LANGUAGE_NAMES = {
+    "pl": "🇵🇱 Polski",
+    "ru": "🇷🇺 Русский",
+}
 
 
 def get_language_keyboard() -> InlineKeyboardMarkup:
-    """Get language selection keyboard"""
+    """Get language selection keyboard using supported languages from config"""
     builder = InlineKeyboardBuilder()
     
-    builder.row(
-        InlineKeyboardButton(text="🇵🇱 Polski", callback_data="lang:pl"),
-        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang:ru")
-    )
+    settings = get_settings()
+    supported_languages = settings.supported_languages_list
+    
+    # Create buttons for each supported language
+    buttons = []
+    for lang_code in supported_languages:
+        display_name = LANGUAGE_NAMES.get(lang_code, lang_code.upper())
+        buttons.append(
+            InlineKeyboardButton(
+                text=display_name,
+                callback_data=f"lang:{lang_code}"
+            )
+        )
+    
+    # Add buttons in rows of 2
+    for i in range(0, len(buttons), 2):
+        row = buttons[i:i+2]
+        builder.row(*row)
     
     return builder.as_markup()
 
@@ -87,6 +109,12 @@ def get_admin_menu_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
     )
     builder.row(
         InlineKeyboardButton(
+            text=_("menu.admin.calendar"),
+            callback_data="calendar:menu"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
             text=_("menu.admin.manage_settings"),
             callback_data="admin:settings"
         )
@@ -139,6 +167,18 @@ def get_mechanic_menu_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
         InlineKeyboardButton(
             text=_("menu.mechanic.manage_services"),
             callback_data="admin:manage_services"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=_("menu.mechanic.calendar"),
+            callback_data="calendar:menu"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=_("menu.mechanic.add_service"),
+            callback_data="service:add"
         )
     )
     builder.row(
@@ -531,7 +571,49 @@ def get_settings_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_user_settings_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
+def get_calendar_keyboard(
+    _: Callable[[str], str],
+    language: str,
+    available_dates: List[date]
+) -> InlineKeyboardMarkup:
+    """
+    Get calendar navigation keyboard limited to dates with bookings
+    """
+    from app.services.time_service import TimeService
+    
+    builder = InlineKeyboardBuilder()
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    
+    for target_date in available_dates:
+        if target_date == today:
+            label = _("calendar.today")
+        elif target_date == tomorrow:
+            label = _("calendar.tomorrow")
+        else:
+            label = TimeService.format_date(target_date, language)
+        
+        builder.row(
+            InlineKeyboardButton(
+                text=label,
+                callback_data=f"calendar:day:{target_date.isoformat()}"
+            )
+        )
+    
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.back"),
+            callback_data="menu:main"
+        )
+    )
+    
+    return builder.as_markup()
+
+
+def get_user_settings_keyboard(
+    _: Callable[[str], str],
+    show_reminders: bool = False
+) -> InlineKeyboardMarkup:
     """
     Get user settings keyboard
     
@@ -546,10 +628,57 @@ def get_user_settings_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
             callback_data="user_settings:change_language"
         )
     )
+    if show_reminders:
+        builder.row(
+            InlineKeyboardButton(
+                text=_("user_settings.reminders_button"),
+                callback_data="user_settings:reminders"
+            )
+        )
     builder.row(
         InlineKeyboardButton(
             text=_("common.back"),
             callback_data="menu:main"
+        )
+    )
+    
+    return builder.as_markup()
+
+
+def get_reminder_settings_keyboard(
+    reminder_3h_enabled: bool,
+    reminder_1h_enabled: bool,
+    reminder_30m_enabled: bool,
+    _: Callable[[str], str]
+) -> InlineKeyboardMarkup:
+    """Keyboard for reminder preferences"""
+    builder = InlineKeyboardBuilder()
+    
+    def status(enabled: bool) -> str:
+        return _("user_settings.reminders_on") if enabled else _("user_settings.reminders_off")
+    
+    builder.row(
+        InlineKeyboardButton(
+            text=_("user_settings.reminders_3h").format(status=status(reminder_3h_enabled)),
+            callback_data="user_settings:toggle_reminder:3h"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=_("user_settings.reminders_1h").format(status=status(reminder_1h_enabled)),
+            callback_data="user_settings:toggle_reminder:1h"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=_("user_settings.reminders_30m").format(status=status(reminder_30m_enabled)),
+            callback_data="user_settings:toggle_reminder:30m"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.back"),
+            callback_data="menu:user_settings"
         )
     )
     

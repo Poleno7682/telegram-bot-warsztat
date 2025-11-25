@@ -106,7 +106,6 @@ async def service_name_entered(
     translations = await TranslationService.translate_to_all_languages(
         text=message.text,
         source_lang=source_lang,
-        target_languages=["pl", "ru"],
     )
 
     await progress_msg.delete()

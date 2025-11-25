@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Timezone
     timezone: str = Field(default="Europe/Warsaw", alias="TIMEZONE")
     
+    # Supported Languages
+    supported_languages: str = Field(default="pl,ru", alias="SUPPORTED_LANGUAGES")
+    
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     
@@ -65,6 +68,13 @@ class Settings(BaseSettings):
         if not self.user_ids:
             return []
         return [int(id_.strip()) for id_ in self.user_ids.split(",") if id_.strip()]
+    
+    @property
+    def supported_languages_list(self) -> List[str]:
+        """Parse supported languages from comma-separated string"""
+        if not self.supported_languages:
+            return ["pl", "ru"]  # Default fallback
+        return [lang.strip() for lang in self.supported_languages.split(",") if lang.strip()]
 
 
 @lru_cache()

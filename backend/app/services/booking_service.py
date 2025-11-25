@@ -84,7 +84,6 @@ class BookingService:
         translations = await TranslationService.translate_to_all_languages(
             description,
             source_lang=language,
-            target_languages=["pl", "ru"]
         )
         
         # Create booking
