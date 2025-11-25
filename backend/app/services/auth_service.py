@@ -3,7 +3,7 @@
 from typing import Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.repositories.user import UserRepository
 from app.config.settings import get_settings
 
@@ -56,14 +56,14 @@ class AuthService:
         # Check if user should be auto-assigned a role from env
         role = await self._determine_initial_role(telegram_id)
         
-        # Create new user (without language - will be set by user later)
+        # Create new user (with LANGUAGE_UNSET - will be set by user later)
         user = await self.user_repo.create_or_update_user(
             telegram_id=telegram_id,
             username=username,
             first_name=first_name,
             last_name=last_name,
             role=role,
-            language=None  # Language will be set by user during first /start
+            language=LANGUAGE_UNSET  # Language will be set by user during first /start
         )
         await self.session.commit()
         
@@ -241,12 +241,12 @@ class AuthService:
             user.role = role
             user.is_active = True
         else:
-            # Create new user with role (language will be None - set by user later)
+            # Create new user with role (language will be LANGUAGE_UNSET - set by user later)
             user = await self.user_repo.create(
                 telegram_id=telegram_id,
                 role=role,
                 is_active=True,
-                language=None  # Language will be set by user during first /start
+                language=LANGUAGE_UNSET  # Language will be set by user during first /start
             )
         
         await self.session.commit()

@@ -15,7 +15,7 @@ from app.bot.keyboards.inline import (
     get_service_management_keyboard,
 )
 from app.bot.states.booking import AddServiceStates
-from app.models.user import User
+from app.models.user import User, LANGUAGE_UNSET
 from app.services.service_management_service import ServiceManagementService
 
 router = Router(name="admin-services")
@@ -55,14 +55,19 @@ async def list_services(
         await callback.answer()
         return
 
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     text = _("service_management.title") + "\n\n"
     for service in services:
-        text += f"• {service.get_name(user.language)} ({service.duration_minutes} min)\n"
+        text += f"• {service.get_name(language)} ({service.duration_minutes} min)\n"
 
     await send_clean_menu(
         callback=callback,
         text=text,
-        reply_markup=get_service_list_keyboard(services, user.language, _),
+        reply_markup=get_service_list_keyboard(services, language, _),
     )
     await callback.answer()
 
@@ -80,7 +85,11 @@ async def add_service_start(
         text=_("service_management.enter_name"),
         reply_markup=get_cancel_keyboard(_),
     )
-    await state.update_data(source_language=user.language)
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    await state.update_data(source_language=language)
     await state.set_state(AddServiceStates.entering_name_pl)
     await callback.answer()
 
@@ -270,10 +279,15 @@ async def edit_service(
         await callback.answer(_("errors.service_not_found"), show_alert=True)
         return
 
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     text = f"""
 {_("service_management.title")}
 
-{_("common.name")}: {service.get_name(user.language)}
+{_("common.name")}: {service.get_name(language)}
 {_("service_management.duration")}: {service.duration_minutes} min
 """
 

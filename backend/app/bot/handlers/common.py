@@ -8,7 +8,7 @@ from aiogram.types import Message as TelegramMessage, CallbackQuery, InlineKeybo
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramBadRequest
 
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.core.deferred_message_manager import get_deferred_message_manager
 from app.bot.keyboards.inline import (
     get_main_menu_keyboard,
@@ -25,7 +25,7 @@ def _build_menu_payload(user: User) -> tuple[str, InlineKeyboardMarkup]:
     from app.config.settings import get_settings
     
     # Use user's language or fallback to first supported language
-    if user.language:
+    if user.language and user.language != LANGUAGE_UNSET:
         language = user.language
     else:
         settings = get_settings()

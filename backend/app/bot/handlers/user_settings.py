@@ -5,7 +5,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.services.auth_service import AuthService
 from app.repositories.user import UserRepository
 from app.bot.keyboards.inline import (
@@ -42,12 +42,12 @@ def get_language_display_name(language: str | None) -> str:
     Get language display name
     
     Args:
-        language: Language code (can be None)
+        language: Language code (can be None or LANGUAGE_UNSET)
         
     Returns:
         Language name or "Not set" message
     """
-    if not language:
+    if not language or language == LANGUAGE_UNSET:
         return "❌ Не установлен / Nie ustawiono"
     language_map = {
         "pl": "Polski 🇵🇱",
@@ -89,8 +89,8 @@ async def show_user_settings(
     role_name = get_role_display_name(user.role, _)
     
     # Get language display name
-    # Use user's language or show "Not set" if None
-    if user.language:
+    # Use user's language or show "Not set" if unset
+    if user.language and user.language != LANGUAGE_UNSET:
         language_name = get_language_display_name(user.language)
     else:
         language_name = _("user_settings.language_not_set")

@@ -7,7 +7,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.repositories.booking import BookingRepository
 from app.services.time_service import TimeService
 from app.bot.keyboards.inline import get_calendar_keyboard
@@ -51,7 +51,7 @@ async def show_calendar_menu(
     # Get language with fallback
     from app.config.settings import get_settings
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     text = (
         _("calendar.title") + "\n\n" + _("calendar.select_day")
@@ -98,7 +98,7 @@ async def show_calendar_day(
     # Get language with fallback
     from app.config.settings import get_settings
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     date_text = TimeService.format_date(target_date, language)
     

@@ -105,7 +105,7 @@ async def change_booking_time(
     if isinstance(callback.message, TelegramMessage):
         await callback.message.edit_text(
             _("booking.create.select_date"),
-            reply_markup=get_dates_keyboard(dates, user.language)
+            reply_markup=get_dates_keyboard(dates, user.language if (user.language and user.language != LANGUAGE_UNSET) else "pl")
         )
     
     # Note: In production, use FSM state to store booking_id for time change flow
@@ -174,6 +174,11 @@ async def show_pending_bookings(
     # Show first booking
     booking = bookings[0]
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     time_service = TimeService(session)
     text = _("booking.pending.title") + f" (1/{len(bookings)})\n\n"
     text += _("booking.confirm.details").format(
@@ -182,10 +187,10 @@ async def show_pending_bookings(
         number=booking.car_number,
         client_name=booking.client_name,
         client_phone=booking.client_phone,
-        service=booking.service.get_name(user.language),
-        date=time_service.format_date(booking.booking_date.date(), user.language),
+        service=booking.service.get_name(language),
+        date=time_service.format_date(booking.booking_date.date(), language),
         time=time_service.format_time(booking.booking_date),
-        description=booking.get_description(user.language)
+        description=booking.get_description(language)
     )
     
     if isinstance(callback.message, TelegramMessage):
@@ -230,12 +235,17 @@ async def show_mechanic_bookings(
     # Format bookings list
     text = _("booking.mechanic.my_bookings_title") + "\n\n"
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     time_service = TimeService(session)
     
     for booking in confirmed_bookings:
-        text += f"✅ {time_service.format_date(booking.booking_date.date(), user.language)} "
+        text += f"✅ {time_service.format_date(booking.booking_date.date(), language)} "
         text += f"{time_service.format_time(booking.booking_date)}\n"
-        text += f"   🛠️ {booking.service.get_name(user.language)}\n"
+        text += f"   🛠️ {booking.service.get_name(language)}\n"
         text += f"   🚗 {booking.car_brand} {booking.car_model}\n"
         text += f"   👤 {booking.client_name}\n"
         text += "\n"

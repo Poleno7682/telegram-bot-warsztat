@@ -4,7 +4,7 @@ from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
-from app.models.user import User
+from app.models.user import User, LANGUAGE_UNSET
 from app.core.i18n import get_i18n_loader
 
 
@@ -35,7 +35,7 @@ class I18nMiddleware(BaseMiddleware):
         # Get user from data (injected by AuthMiddleware)
         user: User = data.get("user")
         # Use user's language or fallback to first supported language
-        if user and user.language:
+        if user and user.language and user.language != LANGUAGE_UNSET:
             language = user.language
         else:
             from app.config.settings import get_settings

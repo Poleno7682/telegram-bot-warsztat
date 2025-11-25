@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message as TelegramMessage, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
+from app.models.user import User, LANGUAGE_UNSET
 from app.services.auth_service import AuthService
 from app.bot.keyboards.inline import get_language_keyboard
 from app.core.i18n import get_text
@@ -47,8 +47,8 @@ async def cmd_start(
         last_name=message.from_user.last_name
     )
     
-    # If new user or no language set, show language selection
-    if is_new or not user.language:
+    # If new user or language is unset, show language selection
+    if is_new or user.language == LANGUAGE_UNSET:
         # Use first supported language as fallback for welcome message
         from app.config.settings import get_settings
         settings = get_settings()

@@ -7,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
 
+# Special value for unset language (user needs to select language)
+LANGUAGE_UNSET = "unset"
+
 
 class UserRole(str, enum.Enum):
     """User role enumeration"""
@@ -38,8 +41,8 @@ class User(Base, TimestampMixin):
         default=UserRole.USER
     )
     
-    # Language preference (None means not set yet)
-    language: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    # Language preference (LANGUAGE_UNSET means not set yet - user needs to select)
+    language: Mapped[str] = mapped_column(String(10), nullable=False, default=LANGUAGE_UNSET)
     
     # Active status
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

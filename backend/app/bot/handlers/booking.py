@@ -50,7 +50,7 @@ async def start_new_booking(
     # Get language with fallback
     from app.config.settings import get_settings
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     # Show services with clean menu
     await send_clean_menu(
@@ -87,7 +87,7 @@ async def service_selected(
     # Get language with fallback
     from app.config.settings import get_settings
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     # Show dates
     if isinstance(callback.message, TelegramMessage):
@@ -156,7 +156,7 @@ async def date_selected(
     # Get language with fallback
     from app.config.settings import get_settings
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     # Show times
     if isinstance(callback.message, TelegramMessage):
@@ -270,7 +270,7 @@ async def description_entered(
     # Get language with fallback for booking creation
     from app.config.settings import get_settings
     settings = get_settings()
-    booking_language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    booking_language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     booking, msg = await booking_service.create_booking(
         creator_telegram_id=user.telegram_id,
@@ -294,7 +294,7 @@ async def description_entered(
         # Get language with fallback
         from app.config.settings import get_settings
         settings = get_settings()
-        language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+        language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
         
         details = _("booking.confirm.details").format(
             brand=booking.car_brand,
@@ -360,7 +360,7 @@ async def show_my_bookings(
     from app.config.settings import get_settings
     time_service = TimeService(session)
     settings = get_settings()
-    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
     
     for booking in bookings:
         status_emoji = {

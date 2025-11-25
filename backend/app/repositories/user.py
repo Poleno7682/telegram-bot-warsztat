@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, LANGUAGE_UNSET
 from .base import BaseRepository
 
 
@@ -59,7 +59,7 @@ class UserRepository(BaseRepository[User]):
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         role: UserRole = UserRole.USER,
-        language: Optional[str] = None
+        language: Optional[str] = LANGUAGE_UNSET
     ) -> User:
         """
         Create new user or update existing user
