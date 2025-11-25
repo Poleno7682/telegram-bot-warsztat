@@ -7,6 +7,7 @@ from . import mechanic
 from . import admin
 from . import user_settings
 from . import calendar
+from . import health
 
 __all__ = [
     "start",
@@ -15,6 +16,7 @@ __all__ = [
     "mechanic",
     "admin",
     "user_settings",
-    "calendar"
+    "calendar",
+    "health"
 ]
 
