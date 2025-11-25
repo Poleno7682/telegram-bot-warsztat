@@ -27,6 +27,11 @@ Telegram-Bot-Warsztat/
 │   ├── setup_windows.bat                 # Windows setup
 │   └── setup_linux.sh                    # Linux/Mac setup
 │
+├── 🚀 Deployment
+│   ├── deployment/
+│   │   ├── systemd/                     # systemd unit files
+│   │   └── logrotate/                    # logrotate configs
+│
 └── 📚 Documentation
     ├── README.md                         # This file
     ├── backend/README.md                 # Backend docs
