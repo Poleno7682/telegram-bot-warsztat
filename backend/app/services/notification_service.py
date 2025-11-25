@@ -1,6 +1,5 @@
 """Notification Service - Handles sending notifications to users"""
 
-import logging
 from typing import List
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,9 +9,10 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.core.i18n import get_text
 from app.core.rate_limiter import get_notification_rate_limiter
+from app.core.logging_config import get_logger
 from .time_service import TimeService
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NotificationService:

@@ -1,7 +1,6 @@
 """Scheduler that sends upcoming booking reminders to mechanics"""
 
 import asyncio
-import logging
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from typing import Optional
@@ -12,6 +11,7 @@ from aiogram import Bot
 from app.config.database import AsyncSessionLocal
 from app.repositories.booking import BookingRepository
 from app.services.notification_service import NotificationService
+from app.core.logging_config import get_logger
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class ReminderScheduler:
     
     def __init__(self, bot: Bot):
         self.bot = bot
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
         self._task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
         self._running = False
@@ -71,14 +71,14 @@ class ReminderScheduler:
         if not self._running or not self._task:
             return
         
-        self.logger.info("Stopping reminder scheduler...")
+        self.logger.info("Stopping reminder scheduler")
         self._stop_event.set()
         
         timeout = timeout or self.STOP_TIMEOUT
         try:
             await asyncio.wait_for(self._task, timeout=timeout)
         except asyncio.TimeoutError:
-            self.logger.warning(f"Scheduler did not stop within {timeout}s, cancelling task")
+            self.logger.warning("Scheduler did not stop within timeout, cancelling task", timeout=timeout)
             self._task.cancel()
             try:
                 await self._task
@@ -113,7 +113,7 @@ class ReminderScheduler:
                     await self._process_cycle()
                 except Exception as exc:
                     # Log error but continue running
-                    self.logger.exception("Reminder scheduler cycle failed: %s", exc)
+                    self.logger.exception("Reminder scheduler cycle failed", error=str(exc), exc_info=True)
                     # Wait a bit before retrying to avoid tight error loops
                     await asyncio.sleep(5)
                 
@@ -127,7 +127,7 @@ class ReminderScheduler:
             self.logger.info("Reminder scheduler loop cancelled")
             raise
         except Exception as exc:
-            self.logger.exception("Fatal error in reminder scheduler loop: %s", exc)
+            self.logger.exception("Fatal error in reminder scheduler loop", error=str(exc), exc_info=True)
             raise
         finally:
             self.logger.info("Reminder scheduler loop ended")
@@ -143,7 +143,7 @@ class ReminderScheduler:
                 try:
                     bookings = await repo.get_bookings_for_reminders(now)
                 except Exception as e:
-                    self.logger.error(f"Failed to fetch bookings for reminders: {e}")
+                    self.logger.error("Failed to fetch bookings for reminders", error=str(e), exc_info=True)
                     return
                 
                 updated = False
@@ -192,12 +192,12 @@ class ReminderScheduler:
                     try:
                         await session.commit()
                         if reminders_sent > 0:
-                            self.logger.debug(f"Sent {reminders_sent} reminder(s) in this cycle")
+                            self.logger.debug("Reminders sent in cycle", count=reminders_sent)
                     except Exception as e:
-                        self.logger.error(f"Failed to commit reminder updates: {e}")
+                        self.logger.error("Failed to commit reminder updates", error=str(e), exc_info=True)
                         await session.rollback()
         except Exception as e:
-            self.logger.error(f"Error in reminder cycle: {e}")
+            self.logger.error("Error in reminder cycle", error=str(e), exc_info=True)
             raise
     
     def _should_send(self, delta: timedelta, threshold: timedelta) -> bool:

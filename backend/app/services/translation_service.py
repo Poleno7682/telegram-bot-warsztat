@@ -1,7 +1,6 @@
 """Translation Service with LRU cache and fallback strategy"""
 
 import asyncio
-import logging
 from typing import Dict, Optional
 from functools import lru_cache
 from collections import OrderedDict
@@ -9,9 +8,10 @@ from deep_translator import GoogleTranslator
 
 from app.config.settings import get_settings
 from app.core.rate_limiter import get_translation_rate_limiter
+from app.core.logging_config import get_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LRUCache:

@@ -1,14 +1,14 @@
 """Deferred Message Manager - prevents duplicate scheduled messages"""
 
 import asyncio
-import logging
 from typing import Dict, Optional, Callable, Awaitable
 from datetime import datetime, timedelta
 
 from aiogram import Bot
 from aiogram.types import Message as TelegramMessage
+from app.core.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DeferredMessageManager:

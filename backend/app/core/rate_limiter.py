@@ -1,12 +1,13 @@
 """Rate Limiter - prevents spam by throttling messages per chat"""
 
 import asyncio
-import logging
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-logger = logging.getLogger(__name__)
+from app.core.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class RateLimiter:
