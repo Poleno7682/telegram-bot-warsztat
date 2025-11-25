@@ -17,9 +17,9 @@ class I18nLoader:
             locales_dir: Directory with locale JSON files
         """
         if locales_dir is None:
-            locales_dir = Path(__file__).parent / "locales"
-        
-        self.locales_dir = Path(locales_dir)
+            self.locales_dir = Path(__file__).parent / "locales"
+        else:
+            self.locales_dir = Path(locales_dir)
         self.translations: Dict[str, Dict[str, str]] = {}
         self.available_languages: list[str] = []
         
