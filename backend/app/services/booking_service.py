@@ -10,6 +10,7 @@ from app.models.user import User
 from app.repositories.booking import BookingRepository
 from app.repositories.service import ServiceRepository
 from app.repositories.user import UserRepository
+from app.core.timezone_utils import ensure_utc
 from .translation_service import TranslationService
 from .time_service import TimeService
 
@@ -71,9 +72,12 @@ class BookingService:
         if not service or not service.is_active:
             return None, "Service not found or inactive"
         
+        # Ensure booking_datetime is in UTC
+        booking_datetime_utc = ensure_utc(booking_datetime)
+        
         # Check if time slot is available
         is_available = await self.time_service.is_slot_available(
-            booking_datetime,
+            booking_datetime_utc,
             service.duration_minutes
         )
         
@@ -86,7 +90,7 @@ class BookingService:
             source_lang=language,
         )
         
-        # Create booking
+        # Create booking (always in UTC)
         booking = await self.booking_repo.create_booking(
             creator_id=creator.id,
             service_id=service_id,
@@ -98,7 +102,7 @@ class BookingService:
             description_pl=translations["pl"],
             description_ru=translations["ru"],
             original_language=language,
-            booking_date=booking_datetime
+            booking_date=booking_datetime_utc
         )
         
         await self.session.commit()

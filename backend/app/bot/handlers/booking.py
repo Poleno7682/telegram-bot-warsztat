@@ -248,6 +248,10 @@ async def description_entered(
     booking_service = BookingService(session)
     booking_datetime = datetime.fromisoformat(data["booking_time"])
     
+    # Ensure booking_datetime is in UTC
+    from app.core.timezone_utils import ensure_utc
+    booking_datetime = ensure_utc(booking_datetime)
+    
     booking, msg = await booking_service.create_booking(
         creator_telegram_id=user.telegram_id,
         service_id=service_id,

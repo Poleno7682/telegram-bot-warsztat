@@ -8,6 +8,7 @@ import pytz
 from app.repositories.booking import BookingRepository
 from app.repositories.settings import SettingsRepository
 from app.models.booking import Booking
+from app.core.timezone_utils import to_utc
 
 
 class TimeSlot:
@@ -154,7 +155,8 @@ class TimeService:
                     break
             
             if is_available:
-                available_slots.append(current_time)
+                # Convert to UTC before returning
+                available_slots.append(to_utc(current_time))
             
             current_time += time_step
         
