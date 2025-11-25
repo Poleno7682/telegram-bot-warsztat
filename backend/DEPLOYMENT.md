@@ -302,8 +302,8 @@ sudo journalctl -u telegram-bot -n 50
 sudo -u bot python3 -c "from app.config.database import engine; import asyncio; asyncio.run(engine.connect())"
 
 # Пересоздать БД (осторожно! удалит все данные)
-sudo -u bot venv/bin/alembic downgrade base
-sudo -u bot venv/bin/alembic upgrade head
+sudo -u bot python3 -m alembic downgrade base
+sudo -u bot python3 -m alembic upgrade head
 ```
 
 ### Высокое использование ресурсов
