@@ -17,7 +17,8 @@ from app.bot.handlers import (
     mechanic,
     admin,
     user_settings,
-    calendar
+    calendar,
+    health
 )
 from app.bot.middlewares import DbSessionMiddleware, AuthMiddleware, I18nMiddleware
 from app.services.reminder_scheduler import ReminderScheduler
