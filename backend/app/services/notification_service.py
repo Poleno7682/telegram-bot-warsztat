@@ -1,5 +1,6 @@
 """Notification Service - Handles sending notifications to users"""
 
+import logging
 from typing import List
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +9,10 @@ from app.models.booking import Booking
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.core.i18n import get_text
+from app.core.rate_limiter import get_notification_rate_limiter
 from .time_service import TimeService
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationService:
@@ -26,6 +30,7 @@ class NotificationService:
         self.bot = bot
         self.user_repo = UserRepository(session)
         self.time_service = TimeService(session)
+        self.rate_limiter = get_notification_rate_limiter()
     
     async def notify_mechanics_new_booking(self, booking: Booking) -> None:
         """
@@ -141,6 +146,38 @@ class NotificationService:
             )
         except Exception as e:
             print(f"Failed to notify user {user.telegram_id}: {e}")
+
+    async def notify_mechanic_reminder(
+        self,
+        booking: Booking,
+        mechanic: User,
+        time_label_key: str
+    ) -> None:
+        """Send reminder notification to assigned mechanic"""
+        lang = mechanic.language
+        time_left = get_text(time_label_key, lang)
+        
+        details_text = get_text("booking.confirm.details", lang).format(
+            brand=booking.car_brand,
+            model=booking.car_model,
+            number=booking.car_number,
+            client_name=booking.client_name,
+            client_phone=booking.client_phone,
+            service=booking.service.get_name(lang),
+            date=self.time_service.format_date(booking.booking_date.date(), lang),
+            time=self.time_service.format_time(booking.booking_date),
+            description=booking.get_description(lang)
+        )
+        
+        notification = get_text("booking.notification.reminder", lang).format(
+            time_left=time_left,
+            details=details_text
+        )
+        
+        try:
+            await self.bot.send_message(mechanic.telegram_id, notification)
+        except Exception as e:
+            print(f"Failed to send reminder to mechanic {mechanic.telegram_id}: {e}")
     
     async def _send_booking_accepted_notification(
         self,
@@ -212,6 +249,9 @@ class NotificationService:
     ) -> None:
         """Send time change notification"""
         lang = user.language
+        
+        if not booking.proposed_date:
+            return
         
         details_text = get_text("booking.confirm.details", lang).format(
             brand=booking.car_brand,

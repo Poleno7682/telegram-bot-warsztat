@@ -8,6 +8,7 @@ from collections import OrderedDict
 from deep_translator import GoogleTranslator
 
 from app.config.settings import get_settings
+from app.core.rate_limiter import get_translation_rate_limiter
 
 
 logger = logging.getLogger(__name__)
@@ -67,10 +68,11 @@ class TranslationService:
         """Singleton pattern"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            # Initialize cache in __new__ to ensure it's always set
-            settings = get_settings()
-            cache_size = getattr(settings, "translation_cache_size", cls._default_cache_size)
-            cls._instance._cache = LRUCache(maxsize=cache_size)
+        # Initialize cache in __new__ to ensure it's always set
+        settings = get_settings()
+        cache_size = getattr(settings, "translation_cache_size", cls._default_cache_size)
+        cls._instance._cache = LRUCache(maxsize=cache_size)
+        cls._instance._rate_limiter = get_translation_rate_limiter()
         return cls._instance
     
     def __init__(self):
@@ -80,6 +82,8 @@ class TranslationService:
             settings = get_settings()
             cache_size = getattr(settings, "translation_cache_size", self._default_cache_size)
             self._cache = LRUCache(maxsize=cache_size)
+        if not hasattr(self, "_rate_limiter"):
+            self._rate_limiter = get_translation_rate_limiter()
     
     @staticmethod
     def _get_cache_key(text: str, source_lang: str, target_lang: str) -> str:
