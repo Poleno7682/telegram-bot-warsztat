@@ -40,7 +40,7 @@ class TimeService:
         self.booking_repo = BookingRepository(session)
         self.settings_repo = SettingsRepository(session)
     
-    async def get_available_dates(self, days_ahead: int = None) -> List[date]:
+    async def get_available_dates(self, days_ahead: Optional[int] = None) -> List[date]:
         """
         Get list of available dates for booking
         
