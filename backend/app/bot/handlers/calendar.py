@@ -48,6 +48,11 @@ async def show_calendar_menu(
     booking_repo = BookingRepository(session)
     available_dates = await _get_available_calendar_dates(booking_repo)
     
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
     text = (
         _("calendar.title") + "\n\n" + _("calendar.select_day")
         if available_dates
@@ -57,7 +62,7 @@ async def show_calendar_menu(
     await send_clean_menu(
         callback=callback,
         text=text,
-        reply_markup=get_calendar_keyboard(_, user.language, available_dates)
+        reply_markup=get_calendar_keyboard(_, language, available_dates)
     )
     await callback.answer()
 
@@ -90,7 +95,12 @@ async def show_calendar_day(
     bookings = await booking_repo.get_by_date(target_date)
     available_dates = await _get_available_calendar_dates(booking_repo)
     
-    date_text = TimeService.format_date(target_date, user.language)
+    # Get language with fallback
+    from app.config.settings import get_settings
+    settings = get_settings()
+    language = user.language if user.language else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    
+    date_text = TimeService.format_date(target_date, language)
     
     if not bookings:
         text = _("calendar.no_bookings").format(date=date_text)
@@ -106,7 +116,7 @@ async def show_calendar_day(
             text_lines.append(
                 _("calendar.entry").format(
                     time=TimeService.format_time(booking.booking_date),
-                    service=booking.service.get_name(user.language),
+                    service=booking.service.get_name(language),
                     client=booking.client_name,
                     phone=booking.client_phone,
                     mechanic=mechanic_name,
@@ -119,7 +129,7 @@ async def show_calendar_day(
     await send_clean_menu(
         callback=callback,
         text=text,
-        reply_markup=get_calendar_keyboard(_, user.language, available_dates)
+        reply_markup=get_calendar_keyboard(_, language, available_dates)
     )
     await callback.answer()
 
