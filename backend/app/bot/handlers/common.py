@@ -47,6 +47,31 @@ def _build_menu_payload(user: User) -> tuple[str, InlineKeyboardMarkup]:
     return menu_text, keyboard
 
 
+async def safe_callback_answer(
+    callback: CallbackQuery,
+    text: str | None = None,
+    show_alert: bool = False
+) -> None:
+    """
+    Safely answer callback query, ignoring errors for old queries
+    
+    Args:
+        callback: Callback query to answer
+        text: Optional text to show
+        show_alert: Whether to show as alert
+    """
+    try:
+        await callback.answer(text=text, show_alert=show_alert)
+    except TelegramBadRequest as e:
+        # Ignore errors for old queries or invalid query IDs
+        if "query is too old" in str(e) or "query ID is invalid" in str(e):
+            # Query is too old, silently ignore
+            pass
+        else:
+            # Re-raise other errors
+            raise
+
+
 async def send_clean_menu(
     callback: CallbackQuery,
     text: str,
@@ -161,6 +186,32 @@ async def cmd_menu(message: TelegramMessage, user: User):
     await show_main_menu(message, user)
 
 
+async def safe_callback_answer(
+    callback: CallbackQuery,
+    text: str | None = None,
+    show_alert: bool = False
+) -> None:
+    """
+    Safely answer callback query, ignoring errors for old queries
+    
+    Args:
+        callback: Callback query to answer
+        text: Optional text to show
+        show_alert: Whether to show as alert
+    """
+    try:
+        await callback.answer(text=text, show_alert=show_alert)
+    except TelegramBadRequest as e:
+        # Ignore errors for old queries or invalid query IDs
+        error_msg = str(e).lower()
+        if "query is too old" in error_msg or "query id is invalid" in error_msg or "response timeout expired" in error_msg:
+            # Query is too old, silently ignore
+            pass
+        else:
+            # Re-raise other errors
+            raise
+
+
 @router.callback_query(F.data == "menu:main")
 async def callback_main_menu(callback: CallbackQuery, user: User):
     """
@@ -171,7 +222,7 @@ async def callback_main_menu(callback: CallbackQuery, user: User):
         user: User object
     """
     await show_main_menu(callback, user)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "cancel")
@@ -185,5 +236,5 @@ async def callback_cancel(callback: CallbackQuery, user: User):
     """
     # Show main menu (will delete current message and send new)
     await show_main_menu(callback, user)
-    await callback.answer()
+    await safe_callback_answer(callback)
 

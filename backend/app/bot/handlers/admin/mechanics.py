@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message as TelegramMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu
+from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu, safe_callback_answer
 from app.bot.keyboards.inline import (
     get_cancel_keyboard,
     get_mechanic_management_keyboard,
@@ -27,7 +27,7 @@ async def manage_mechanics_menu(callback: CallbackQuery, _: Callable[[str], str]
         text=_("user_management.title") + "\n\n" + _("user_management.select_action"),
         reply_markup=get_mechanic_management_keyboard(_),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "admin:add_mechanic")
@@ -43,7 +43,7 @@ async def add_mechanic_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(UserManagementStates.adding_mechanic)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(UserManagementStates.adding_mechanic)
@@ -90,7 +90,7 @@ async def remove_mechanic_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(UserManagementStates.removing_mechanic)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(UserManagementStates.removing_mechanic)

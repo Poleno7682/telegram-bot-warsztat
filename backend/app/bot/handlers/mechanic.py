@@ -11,6 +11,7 @@ from app.services.booking_service import BookingService
 from app.services.time_service import TimeService
 from app.services.notification_service import NotificationService
 from app.bot.keyboards.inline import get_dates_keyboard, get_booking_actions_keyboard
+from app.bot.handlers.common import safe_callback_answer
 
 router = Router(name="mechanic")
 
@@ -24,7 +25,7 @@ async def accept_booking(
 ):
     """Handle booking acceptance by mechanic"""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     booking_id = int(callback.data.split(":")[2])
@@ -44,9 +45,9 @@ async def accept_booking(
                 callback.message.text + f"\n\n✅ {_('booking.actions.accept')}"
             )
     else:
-        await callback.answer(msg, show_alert=True)
+        await safe_callback_answer(callback, text=msg, show_alert=True)
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("booking:reject:"))
@@ -58,7 +59,7 @@ async def reject_booking(
 ):
     """Handle booking rejection by mechanic"""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     booking_id = int(callback.data.split(":")[2])
@@ -78,9 +79,9 @@ async def reject_booking(
                 callback.message.text + f"\n\n❌ {_('booking.actions.reject')}"
             )
     else:
-        await callback.answer(msg, show_alert=True)
+        await safe_callback_answer(callback, text=msg, show_alert=True)
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("booking:change_time:"))
@@ -92,7 +93,7 @@ async def change_booking_time(
 ):
     """Handle time change request by mechanic"""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     booking_id = int(callback.data.split(":")[2])
@@ -109,7 +110,7 @@ async def change_booking_time(
         )
     
     # Note: In production, use FSM state to store booking_id for time change flow
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("booking:confirm:"))
@@ -121,7 +122,7 @@ async def confirm_proposed_time(
 ):
     """Handle time confirmation by creator"""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     booking_id = int(callback.data.split(":")[2])
@@ -138,9 +139,9 @@ async def confirm_proposed_time(
             
             await callback.message.edit_text(_("booking.confirm.success"))
     else:
-        await callback.answer(msg, show_alert=True)
+        await safe_callback_answer(callback, text=msg, show_alert=True)
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "mechanic:pending")
@@ -168,7 +169,7 @@ async def show_pending_bookings(
                     )
                 ).as_markup())
             )
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     # Show first booking
@@ -198,7 +199,7 @@ async def show_pending_bookings(
             text,
             reply_markup=get_booking_actions_keyboard(booking.id, _)
         )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "mechanic:my_bookings")
@@ -229,7 +230,7 @@ async def show_mechanic_bookings(
                     )
                 ).as_markup())
             )
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     # Format bookings list
@@ -260,5 +261,5 @@ async def show_mechanic_bookings(
                 )
             ).as_markup())
         )
-    await callback.answer()
+    await safe_callback_answer(callback)
 

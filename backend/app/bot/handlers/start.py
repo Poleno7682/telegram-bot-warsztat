@@ -9,6 +9,7 @@ from app.models.user import User, LANGUAGE_UNSET
 from app.services.auth_service import AuthService
 from app.bot.keyboards.inline import get_language_keyboard
 from app.core.i18n import get_text, get_text_bilingual
+from app.bot.handlers.common import safe_callback_answer
 
 router = Router(name="start")
 
@@ -91,5 +92,5 @@ async def select_language(
         from app.bot.handlers.common import show_main_menu
         await show_main_menu(callback, user)
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 
