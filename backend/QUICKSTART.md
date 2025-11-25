@@ -15,17 +15,9 @@
 git clone <repository-url>
 cd Telegram-Bot-Warsztat/backend
 
-# Создать виртуальное окружение
-python -m venv venv
-
-# Активировать виртуальное окружение
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Установить зависимости
-pip install -r requirements.txt
+# Установить зависимости (Linux/Mac - без venv)
+python3 -m pip install --upgrade pip --user
+python3 -m pip install -r requirements.txt --user
 ```
 
 ### 3. Настройка
