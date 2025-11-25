@@ -1,10 +1,11 @@
 """Database session middleware"""
 
 from typing import Callable, Dict, Any, Awaitable
-from aiogram import BaseMiddleware
+from aiogram import BaseMiddleware, Bot
 from aiogram.types import TelegramObject
 
 from app.config.database import AsyncSessionLocal
+from app.core.service_factory import ServiceFactory
 
 
 class DbSessionMiddleware(BaseMiddleware):
@@ -29,6 +30,14 @@ class DbSessionMiddleware(BaseMiddleware):
         """
         async with AsyncSessionLocal() as session:
             data["session"] = session
+            
+            # Inject ServiceFactory if bot is available
+            bot: Bot | None = data.get("bot")
+            if bot:
+                data["service_factory"] = ServiceFactory(session, bot)
+            else:
+                data["service_factory"] = ServiceFactory(session)
+            
             try:
                 result = await handler(event, data)
                 await session.commit()

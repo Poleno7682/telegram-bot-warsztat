@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu
 from app.bot.keyboards.inline import get_cancel_keyboard, get_user_management_keyboard
 from app.bot.states.booking import UserManagementStates
+from app.core.service_factory import ServiceFactory
 from app.models.user import User, UserRole
-from app.services.auth_service import AuthService
 
 router = Router(name="admin-users")
 
@@ -62,7 +62,9 @@ async def add_user_process(
         await message.answer(_("user_management.invalid_id"))
         return
 
-    auth_service = AuthService(session)
+    # Get service factory from data (injected by middleware)
+    service_factory = ServiceFactory(session, message.bot) if message.bot else ServiceFactory(session)
+    auth_service = service_factory.get_auth_service()
     created_user = await auth_service.add_user_role(telegram_id, UserRole.USER)
 
     if created_user:
@@ -109,7 +111,8 @@ async def remove_user_process(
         await message.answer(_("user_management.invalid_id"))
         return
 
-    auth_service = AuthService(session)
+    service_factory = ServiceFactory(session, message.bot) if message.bot else ServiceFactory(session)
+    auth_service = service_factory.get_auth_service()
     success = await auth_service.remove_user_role(telegram_id)
 
     if success:
