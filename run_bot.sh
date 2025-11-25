@@ -7,17 +7,6 @@ echo "   Telegram Bot - Auto Service"
 echo "========================================"
 echo ""
 
-# Check if virtual environment exists
-if [ ! -f "backend/venv/bin/activate" ]; then
-    echo "[ERROR] Virtual environment not found!"
-    echo "Please run setup_linux.sh first"
-    exit 1
-fi
-
-# Activate virtual environment
-echo "[INFO] Activating virtual environment..."
-source backend/venv/bin/activate
-
 # Check if .env exists
 if [ ! -f "backend/.env" ]; then
     echo "[ERROR] Configuration file .env not found!"
@@ -25,11 +14,15 @@ if [ ! -f "backend/.env" ]; then
     exit 1
 fi
 
+# Check if Python dependencies are installed
+if ! python3 -c "import aiogram" 2>/dev/null; then
+    echo "[ERROR] Python dependencies not installed!"
+    echo "Please run setup_linux.sh first"
+    exit 1
+fi
+
 # Run the bot
 echo "[INFO] Starting bot..."
 echo ""
 python3 run_bot.py
-
-# Deactivate on exit
-deactivate
 

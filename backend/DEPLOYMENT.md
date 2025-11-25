@@ -38,7 +38,7 @@ sudo bash scripts/setup.sh
 sudo apt update && sudo apt upgrade -y
 
 # Установка зависимостей
-sudo apt install -y python3 python3-pip python3-venv git
+sudo apt install -y python3 python3-pip git
 ```
 
 #### 2. Создание пользователя
@@ -55,13 +55,12 @@ sudo git clone <your-repository-url> telegram-bot
 sudo chown -R bot:bot telegram-bot
 ```
 
-#### 4. Настройка виртуального окружения
+#### 4. Установка Python зависимостей
 
 ```bash
 cd /opt/telegram-bot/backend
-sudo -u bot python3 -m venv venv
-sudo -u bot venv/bin/pip install --upgrade pip
-sudo -u bot venv/bin/pip install -r requirements.txt
+sudo -u bot python3 -m pip install --upgrade pip --user
+sudo -u bot python3 -m pip install -r requirements.txt --user
 ```
 
 #### 5. Настройка конфигурации
@@ -88,7 +87,7 @@ ADMIN_IDS=123456789,987654321
 sudo -u bot mkdir -p db
 
 # Запустить миграции
-sudo -u bot venv/bin/alembic upgrade head
+sudo -u bot python3 -m alembic upgrade head
 ```
 
 #### 7. Настройка systemd service
@@ -192,7 +191,7 @@ sudo -u bot git pull
 
 # Обновить зависимости (если изменились)
 cd backend
-sudo -u bot venv/bin/pip install -r requirements.txt
+sudo -u bot python3 -m pip install -r requirements.txt --user
 
 # Запустить миграции (если есть)
 sudo -u bot venv/bin/alembic upgrade head
@@ -300,7 +299,7 @@ sudo journalctl -u telegram-bot -n 50
 
 ```bash
 # Проверить подключение к БД
-sudo -u bot venv/bin/python -c "from app.config.database import engine; import asyncio; asyncio.run(engine.connect())"
+sudo -u bot python3 -c "from app.config.database import engine; import asyncio; asyncio.run(engine.connect())"
 
 # Пересоздать БД (осторожно! удалит все данные)
 sudo -u bot venv/bin/alembic downgrade base

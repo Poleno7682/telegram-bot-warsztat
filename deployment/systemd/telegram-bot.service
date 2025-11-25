@@ -7,8 +7,8 @@ Type=simple
 User=telegram-bot
 Group=telegram-bot
 WorkingDirectory=/opt/telegram-bot/backend
-Environment="PATH=/opt/telegram-bot/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=/opt/telegram-bot/backend/venv/bin/python /opt/telegram-bot/run_bot.py
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/python3 /opt/telegram-bot/run_bot.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

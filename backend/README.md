@@ -139,7 +139,7 @@ python -m app.main
 sudo apt update && sudo apt upgrade -y
 
 # Установка Python 3.11+
-sudo apt install python3 python3-pip python3-venv -y
+sudo apt install python3 python3-pip -y
 
 # Установка PostgreSQL (опционально)
 sudo apt install postgresql postgresql-contrib -y
@@ -154,13 +154,11 @@ sudo git clone <repository-url> telegram-bot
 cd telegram-bot/backend
 ```
 
-### 3. Настройка виртуального окружения
+### 3. Установка Python зависимостей
 
 ```bash
-sudo python3 -m venv venv
-sudo chown -R $USER:$USER venv
-source venv/bin/activate
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip --user
+python3 -m pip install -r requirements.txt --user
 ```
 
 ### 4. Настройка .env

@@ -198,10 +198,8 @@ nano backend/.env
 ```bash
 # 1. Установка
 cd backend
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip --user
+python3 -m pip install -r requirements.txt --user
 
 # 2. Настройка
 cp env.example .env

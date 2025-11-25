@@ -16,7 +16,6 @@ fi
 # Variables
 BOT_USER="bot"
 BOT_DIR="/opt/telegram-bot"
-VENV_DIR="$BOT_DIR/backend/venv"
 
 # 1. Create user for bot
 echo "Creating user for bot..."
@@ -35,7 +34,7 @@ chown -R "$BOT_USER:$BOT_USER" "$BOT_DIR"
 # 3. Install system dependencies
 echo "Installing system dependencies..."
 apt update
-apt install -y python3 python3-pip python3-venv git postgresql postgresql-contrib
+apt install -y python3 python3-pip git postgresql postgresql-contrib
 
 # 4. Setup PostgreSQL (optional)
 read -p "Do you want to setup PostgreSQL? (y/n) " -n 1 -r
@@ -56,11 +55,10 @@ else
     echo "Repository already cloned"
 fi
 
-# 6. Setup virtual environment
-echo "Setting up Python virtual environment..."
-sudo -u "$BOT_USER" python3 -m venv "$VENV_DIR"
-sudo -u "$BOT_USER" "$VENV_DIR/bin/pip" install --upgrade pip
-sudo -u "$BOT_USER" "$VENV_DIR/bin/pip" install -r "$BOT_DIR/backend/requirements.txt"
+# 6. Install Python dependencies
+echo "Installing Python dependencies..."
+sudo -u "$BOT_USER" python3 -m pip install --upgrade pip --user
+sudo -u "$BOT_USER" python3 -m pip install -r "$BOT_DIR/backend/requirements.txt" --user
 
 # 7. Setup .env file
 if [ ! -f "$BOT_DIR/backend/.env" ]; then
@@ -75,7 +73,7 @@ fi
 # 8. Run database migrations
 echo "Running database migrations..."
 cd "$BOT_DIR/backend"
-sudo -u "$BOT_USER" "$VENV_DIR/bin/alembic" upgrade head
+sudo -u "$BOT_USER" python3 -m alembic upgrade head
 
 # 9. Install systemd service
 echo "Installing systemd service..."

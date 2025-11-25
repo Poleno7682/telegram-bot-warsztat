@@ -20,28 +20,13 @@ echo "[INFO] Python found"
 python3 --version
 echo ""
 
-# Create virtual environment
-if [ ! -d "backend/venv" ]; then
-    echo "[INFO] Creating virtual environment..."
-    cd backend
-    python3 -m venv venv
-    cd ..
-    echo "[SUCCESS] Virtual environment created"
-else
-    echo "[INFO] Virtual environment already exists"
-fi
-
-echo ""
-echo "[INFO] Activating virtual environment..."
-source backend/venv/bin/activate
-
 # Upgrade pip
 echo "[INFO] Upgrading pip..."
-pip install --upgrade pip
+python3 -m pip install --upgrade pip --user
 
 # Install requirements
 echo "[INFO] Installing requirements..."
-pip install -r backend/requirements.txt
+python3 -m pip install -r backend/requirements.txt --user
 
 # Create .env if not exists
 if [ ! -f "backend/.env" ]; then
@@ -62,7 +47,7 @@ fi
 # Run migrations
 echo "[INFO] Running database migrations..."
 cd backend
-alembic upgrade head
+python3 -m alembic upgrade head
 cd ..
 
 echo ""
@@ -75,6 +60,4 @@ echo "1. Edit backend/.env with your BOT_TOKEN and ADMIN_IDS"
 echo "2. Make run_bot.sh executable: chmod +x run_bot.sh"
 echo "3. Run the bot with: ./run_bot.sh"
 echo ""
-
-deactivate
 
