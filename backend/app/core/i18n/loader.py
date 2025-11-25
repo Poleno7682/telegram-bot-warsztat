@@ -105,3 +105,21 @@ def get_text(key: str, lang: str = "pl", **kwargs) -> str:
     """
     return get_i18n_loader().get(key, lang, **kwargs)
 
+
+def get_text_bilingual(key: str, **kwargs) -> str:
+    """
+    Get translation in both Polish and Russian with flags
+    
+    Args:
+        key: Translation key
+        **kwargs: Variables for string formatting
+        
+    Returns:
+        Formatted string with both languages separated by newline and flags
+    """
+    loader = get_i18n_loader()
+    text_pl = loader.get(key, "pl", **kwargs)
+    text_ru = loader.get(key, "ru", **kwargs)
+    
+    return f"🇵🇱 {text_pl}\n\n🇷🇺 {text_ru}"
+

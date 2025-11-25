@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, LANGUAGE_UNSET
 from app.services.auth_service import AuthService
 from app.bot.keyboards.inline import get_language_keyboard
-from app.core.i18n import get_text
+from app.core.i18n import get_text, get_text_bilingual
 
 router = Router(name="start")
 
@@ -34,8 +34,8 @@ async def cmd_start(
     is_authorized = await auth_service.is_authorized(message.from_user.id)
     
     if not is_authorized:
-        # Send unauthorized message in both languages
-        text = get_text("start.unauthorized_both", "pl")
+        # Send unauthorized message in both languages with flags
+        text = get_text_bilingual("start.unauthorized")
         await message.answer(text)
         return
     
@@ -49,11 +49,8 @@ async def cmd_start(
     
     # If new user or language is unset, show language selection
     if is_new or user.language == LANGUAGE_UNSET:
-        # Use first supported language as fallback for welcome message
-        from app.config.settings import get_settings
-        settings = get_settings()
-        fallback_lang = settings.supported_languages_list[0] if settings.supported_languages_list else "pl"
-        welcome_text = get_text("start.welcome", fallback_lang)
+        # Show welcome message in both languages with flags
+        welcome_text = get_text_bilingual("start.welcome")
         await message.answer(
             welcome_text,
             reply_markup=get_language_keyboard()

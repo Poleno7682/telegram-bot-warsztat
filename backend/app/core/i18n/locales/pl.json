@@ -19,8 +19,7 @@
     "welcome": "👋 Witamy w systemie rezerwacji serwisu samochodowego!\n\nWybierz język:",
     "select_language": "Wybierz język / Выберите язык",
     "language_selected": "✅ Język ustawiony: Polski",
-    "unauthorized": "❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nSkontaktuj się z administratorem.",
-    "unauthorized_both": "❌ You are not authorized to use this bot.\n❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nContact administrator / Skontaktuj się z administratorem."
+    "unauthorized": "❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nSkontaktuj się z administratorem."
   },
   
   "menu": {
