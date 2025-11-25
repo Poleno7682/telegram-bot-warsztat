@@ -15,8 +15,10 @@ from .settings import get_settings
 
 settings = get_settings()
 
+# Get database URL (either from DATABASE_URL or constructed from PostgreSQL params)
+database_url = settings.get_database_url()
+
 # Handle SQLite paths - make them absolute relative to backend directory
-database_url = settings.database_url
 if "sqlite" in database_url:
     # Extract path from URL (format: sqlite+aiosqlite:///./db/bot.db)
     db_path = database_url.split("///")[-1]
