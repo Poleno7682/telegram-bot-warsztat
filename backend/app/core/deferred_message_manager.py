@@ -24,7 +24,7 @@ class DeferredMessageManager:
         self,
         bot: Bot,
         chat_id: int,
-        message_func: Callable[[], Awaitable[TelegramMessage]],
+        message_func: Callable[[], Awaitable[TelegramMessage | None]],
         delay: float = 3.0,
         cancel_previous: bool = True
     ) -> None:
