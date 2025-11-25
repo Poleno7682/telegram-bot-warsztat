@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    log_format: str = Field(default="human", alias="LOG_FORMAT")  # "json" or "human"
     
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).parent.parent.parent / ".env"),

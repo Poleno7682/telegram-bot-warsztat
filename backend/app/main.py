@@ -73,9 +73,9 @@ async def main():
     settings = get_settings()
     
     # Configure logging based on settings
-    json_format = settings.log_level.upper() in ["INFO", "WARNING", "ERROR", "CRITICAL"]
+    json_format = settings.log_format.lower() == "json"
     configure_logging(log_level=settings.log_level, json_format=json_format)
-    logger.info("Logging configured", log_level=settings.log_level, json_format=json_format)
+    logger.info("Logging configured", log_level=settings.log_level, format=settings.log_format)
     
     # Initialize bot and dispatcher
     bot = Bot(
