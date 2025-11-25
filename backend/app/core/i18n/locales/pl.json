@@ -16,7 +16,7 @@
   },
   
   "start": {
-    "welcome": "👋 Witamy w systemie rezerwacji serwisu samochodowego!\n\nWybierz język:",
+    "welcome": "👋 Witamy w systemie rezerwacji serwisu samochodowego!",
     "select_language": "Wybierz język / Выберите язык",
     "language_selected": "✅ Język ustawiony: Polski",
     "unauthorized": "❌ Nie jesteś autoryzowany do korzystania z tego bota.\n\nSkontaktuj się z administratorem."

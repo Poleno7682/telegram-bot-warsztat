@@ -121,5 +121,14 @@ def get_text_bilingual(key: str, **kwargs) -> str:
     text_pl = loader.get(key, "pl", **kwargs)
     text_ru = loader.get(key, "ru", **kwargs)
     
+    # Special formatting for welcome message
+    if key == "start.welcome":
+        select_pl = loader.get("start.select_language", "pl")
+        select_ru = loader.get("start.select_language", "ru")
+        # Extract language texts (before "/" for PL, after "/" for RU)
+        select_pl_text = select_pl.split(" / ")[0] if " / " in select_pl else select_pl
+        select_ru_text = select_ru.split(" / ")[1] if " / " in select_ru else select_ru
+        return f"🇵🇱 {text_pl}\n\n🇷🇺 {text_ru}\n\n🇷🇺 {select_ru_text}:\n\n🇵🇱 {select_pl_text}:"
+    
     return f"🇵🇱 {text_pl}\n\n🇷🇺 {text_ru}"
 
