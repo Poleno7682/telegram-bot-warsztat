@@ -19,15 +19,22 @@ sudo git clone <your-repository-url> telegram-bot
 # 2. Запустить скрипт установки
 cd telegram-bot/backend
 sudo bash scripts/setup.sh
+
+# 3. Установить как systemd service
+sudo bash scripts/install_service.sh
 ```
 
-Скрипт автоматически:
+Скрипт `setup.sh` автоматически:
 - Создаст пользователя для бота
 - Установит все зависимости
-- Настроит виртуальное окружение
 - Создаст .env файл
 - Запустит миграции БД
-- Настроит systemd service
+
+Скрипт `install_service.sh` автоматически:
+- Проверит/создаст пользователя `bot`
+- Настроит права доступа
+- Установит systemd service
+- Включит автозапуск
 
 ### Ручная установка
 
@@ -91,6 +98,24 @@ sudo -u bot python3 -m alembic upgrade head
 ```
 
 #### 7. Настройка systemd service
+
+**Автоматическая установка (рекомендуется):**
+
+```bash
+# Запустить скрипт установки сервиса
+cd /opt/telegram-bot/backend
+sudo bash scripts/install_service.sh
+```
+
+Скрипт автоматически:
+- Создаст пользователя `bot` (если не существует)
+- Настроит права доступа к проекту
+- Проверит/создаст `.env` файл
+- Установит systemd service
+- Включит автозапуск
+- Предложит запустить бота
+
+**Ручная установка:**
 
 ```bash
 # Копировать service файл

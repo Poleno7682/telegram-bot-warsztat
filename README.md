@@ -247,20 +247,37 @@ python3 run_bot.py
 ### VPS (Linux)
 
 ```bash
-# Автоматическая установка
+# 1. Клонировать проект
 cd /opt
 sudo git clone <repository-url> telegram-bot
+
+# 2. Установить зависимости
 cd telegram-bot/backend
 sudo bash scripts/setup.sh
+
+# 3. Установить как systemd service
+sudo bash scripts/install_service.sh
 ```
 
 ### Systemd Service
 
 Бот устанавливается как systemd service и автоматически запускается при старте системы.
 
+**Установка сервиса:**
 ```bash
+cd /opt/telegram-bot/backend
+sudo bash scripts/install_service.sh
+```
+
+**Управление сервисом:**
+```bash
+# Запуск
 sudo systemctl start telegram-bot
+
+# Статус
 sudo systemctl status telegram-bot
+
+# Логи (real-time)
 sudo journalctl -u telegram-bot -f
 ```
 

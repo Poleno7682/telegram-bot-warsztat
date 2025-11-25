@@ -290,5 +290,15 @@ backend/
 2. Настройте рабочие часы под ваш график
 3. Добавьте все необходимые услуги
 4. Протестируйте workflow создания и принятия записей
-5. При готовности к production - разверните на VPS (см. DEPLOYMENT.md)
+5. При готовности к production - разверните на VPS:
+
+```bash
+# Установить зависимости
+sudo bash scripts/setup.sh
+
+# Установить как systemd service
+sudo bash scripts/install_service.sh
+```
+
+Подробнее: [DEPLOYMENT.md](DEPLOYMENT.md)
 
