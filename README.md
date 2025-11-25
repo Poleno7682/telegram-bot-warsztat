@@ -206,12 +206,12 @@ cp env.example .env
 nano .env  # Укажите BOT_TOKEN и ADMIN_IDS
 
 # 3. Миграции
-mkdir db
-alembic upgrade head
+mkdir -p db
+python3 -m alembic upgrade head
 
 # 4. Запуск
 cd ..
-python run_bot.py
+python3 run_bot.py
 ```
 
 ## 📖 Документация
@@ -310,8 +310,8 @@ USER_IDS=222222222
 ```bash
 # Пересоздать БД
 cd backend
-alembic downgrade base
-alembic upgrade head
+python3 -m alembic downgrade base
+python3 -m alembic upgrade head
 ```
 
 ## 📝 License
