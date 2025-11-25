@@ -1,7 +1,7 @@
 """Booking repository"""
 
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -221,6 +221,56 @@ class BookingRepository(BaseRepository[Booking]):
             await self.session.flush()
             await self.session.refresh(booking)
         return booking
+
+    async def get_bookings_for_reminders(
+        self,
+        now: datetime,
+        window_hours: int = 3,
+        limit: int = 100
+    ) -> List[Booking]:
+        """
+        Get bookings occurring within reminder window that need reminders
+        
+        Optimized query:
+        - Filters by status and date range
+        - Only selects bookings where at least one reminder hasn't been sent
+        - Limits result set for performance
+        - Uses index on booking_date (should be created via migration)
+        
+        Args:
+            now: Current datetime (UTC)
+            window_hours: Hours to look ahead (default: 3)
+            limit: Maximum number of bookings to return (default: 100)
+            
+        Returns:
+            List of bookings needing reminders
+        """
+        window_end = now + timedelta(hours=window_hours)
+        window_start = now - timedelta(minutes=10)
+        
+        # Only select bookings where at least one reminder hasn't been sent
+        # This reduces the dataset significantly
+        result = await self.session.execute(
+            select(Booking)
+            .options(
+                selectinload(Booking.mechanic),
+                selectinload(Booking.service)
+            )
+            .where(
+                Booking.status == BookingStatus.ACCEPTED,
+                Booking.booking_date >= window_start,
+                Booking.booking_date <= window_end,
+                # At least one reminder not sent yet
+                (
+                    (Booking.reminder_3h_sent == False) |
+                    (Booking.reminder_1h_sent == False) |
+                    (Booking.reminder_30m_sent == False)
+                )
+            )
+            .order_by(Booking.booking_date.asc())  # Process earliest first
+            .limit(limit)
+        )
+        return list(result.scalars().all())
     
     async def reject_booking(self, booking_id: int) -> Optional[Booking]:
         """
