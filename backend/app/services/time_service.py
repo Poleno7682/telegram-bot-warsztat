@@ -1,7 +1,7 @@
 """Time Service for calculating available booking slots"""
 
 from datetime import datetime, date, time, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 import pytz
 
@@ -166,7 +166,7 @@ class TimeService:
         self,
         target_datetime: datetime,
         service_duration: int,
-        exclude_booking_id: int = None
+        exclude_booking_id: Optional[int] = None
     ) -> bool:
         """
         Check if a specific time slot is available
