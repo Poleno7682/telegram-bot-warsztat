@@ -6,6 +6,15 @@ from . import booking
 from . import mechanic
 from . import admin
 from . import user_settings
+from . import calendar
 
-__all__ = ["start", "common", "booking", "mechanic", "admin", "user_settings"]
+__all__ = [
+    "start",
+    "common",
+    "booking",
+    "mechanic",
+    "admin",
+    "user_settings",
+    "calendar"
+]
 
