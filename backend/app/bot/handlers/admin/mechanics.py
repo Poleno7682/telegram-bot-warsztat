@@ -4,7 +4,8 @@ from typing import Callable
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message as TelegramMessage
+from aiogram.types import CallbackQuery, Message as TelegramMessage, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu, safe_callback_answer
@@ -14,6 +15,7 @@ from app.bot.keyboards.inline import (
 )
 from app.bot.states.booking import UserManagementStates
 from app.models.user import User, UserRole
+from app.repositories.user import UserRepository
 from app.services.auth_service import AuthService
 
 router = Router(name="admin-mechanics")
@@ -122,4 +124,51 @@ async def remove_mechanic_process(
 
     await state.clear()
     schedule_main_menu_return(message.bot, message.chat.id, user)
+
+
+@router.callback_query(F.data == "admin:list_mechanics")
+async def list_mechanics(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    _: Callable[[str], str],
+):
+    """Show list of all mechanics."""
+    user_repo = UserRepository(session)
+    mechanics = await user_repo.get_all_mechanics()
+    
+    if not mechanics:
+        await send_clean_menu(
+            callback=callback,
+            text=_("user_management.no_mechanics"),
+            reply_markup=get_mechanic_management_keyboard(_),
+        )
+        await safe_callback_answer(callback)
+        return
+    
+    # Format mechanics list
+    lines = [_("user_management.mechanics_list_title") + f" ({len(mechanics)}):\n"]
+    for idx, mechanic in enumerate(mechanics, 1):
+        name = mechanic.full_name
+        username = f" (@{mechanic.username})" if mechanic.username else ""
+        telegram_id = mechanic.telegram_id
+        language = mechanic.language if mechanic.language != "unset" else _("user_management.language_not_set")
+        lines.append(f"{idx}. {name}{username}\n   ID: {telegram_id} | {_('user_management.language')}: {language}")
+    
+    text = "\n".join(lines)
+    
+    # Create keyboard with back button
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.back"),
+            callback_data="admin:manage_mechanics"
+        )
+    )
+    
+    await send_clean_menu(
+        callback=callback,
+        text=text,
+        reply_markup=builder.as_markup(),
+    )
+    await safe_callback_answer(callback)
 

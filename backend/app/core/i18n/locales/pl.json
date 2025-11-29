@@ -12,7 +12,8 @@
     "error": "Błąd",
     "success": "Sukces",
     "loading": "Ładowanie...",
-    "name": "Nazwa"
+    "name": "Nazwa",
+    "skip": "⏭️ Pomiń"
   },
   
   "start": {
@@ -58,24 +59,32 @@
       "select_time": "Wybierz godzinę:",
       "enter_car_brand": "Wprowadź markę samochodu:",
       "enter_car_model": "Wprowadź model samochodu:",
+      "enter_car_brand_model": "Wprowadź markę i model samochodu (np. Toyota Corolla lub Toyota, Corolla):",
       "enter_car_number": "Wprowadź numer rejestracyjny:",
       "enter_client_name": "Wprowadź imię klienta:",
-      "enter_client_phone": "Wprowadź numer telefonu klienta:",
+      "enter_client_phone": "Wprowadź numer telefonu klienta (tylko cyfry):",
       "enter_description": "Wprowadź krótki opis problemu:",
+      "phone_invalid": "❌ Nieprawidłowy numer telefonu. Wprowadź tylko cyfry.",
+      "booking_cancelled": "❌ Rezerwacja anulowana. Powrót do menu głównego.",
+      "no_description": "(Brak opisu)",
       "no_available_slots": "Brak dostępnych terminów na wybrany dzień.",
+      "no_available_dates": "Brak dostępnych dat dla wybranej usługi.",
       "translating": "⏳ Tłumaczenie opisu..."
     },
     "confirm": {
       "title": "✅ Potwierdź rezerwację",
       "details": "📋 Szczegóły rezerwacji:\n\n🚗 Pojazd: {brand} {model}\n📝 Nr rej: {number}\n👤 Klient: {client_name}\n📞 Telefon: {client_phone}\n🛠️ Usługa: {service}\n📅 Data: {date}\n🕐 Godzina: {time}\n\n💬 Opis:\n{description}",
       "success": "✅ Rezerwacja utworzona!\n\nOczekuje na akceptację mechanika.",
+      "time_proposed": "✅ Nowy termin zaproponowany!\n\nOczekuje na potwierdzenie użytkownika.",
       "error": "❌ Błąd podczas tworzenia rezerwacji."
     },
     "notification": {
       "new_booking": "🔔 Nowa rezerwacja!\n\n👤 Utworzona przez: {user_name}\n🚗 Pojazd: {brand} {model}\n📝 Nr rej: {number}\n👤 Klient: {client_name}\n📞 Telefon: {client_phone}\n🛠️ Usługa: {service}\n📅 Data: {date}\n🕐 Godzina: {time}\n\n💬 Opis:\n{description}",
       "accepted": "✅ Rezerwacja zaakceptowana!\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
+      "accepted_mechanic": "✅ Запись принята",
       "rejected": "❌ Rezerwacja odrzucona\n\n🔧 Mechanik: {mechanic_name}\n\n📋 Szczegóły:\n{details}",
       "time_change": "⏰ Propozycja zmiany terminu\n\n🔧 Mechanik: {mechanic_name}\n📅 Nowy termin: {date} {time}\n\n📋 Szczegóły:\n{details}",
+      "time_confirmed": "✅ Klient potwierdził proponowany termin!\n\n👤 Klient: {user_name}\n📅 Potwierdzony termin: {date} {time}\n\n📋 Szczegóły:\n{details}",
       "reminder": "⏰ Przypomnienie: rezerwacja {time_left}\n\n{details}"
     },
     "reminder": {
@@ -99,13 +108,18 @@
       "no_bookings": "Brak oczekujących rezerwacji."
     },
     "mechanic": {
-      "my_bookings_title": "📅 Moje potwierdzone rezerwacje"
+      "my_bookings_title": "📅 Moje potwierdzone rezerwacje",
+      "select_day": "Wybierz dzień, aby zobaczyć rezerwacje:"
     }
   },
   
   "user_management": {
     "title": "👥 Zarządzanie użytkownikami",
     "select_action": "Wybierz akcję:",
+    "list_users": "📋 Lista wszystkich użytkowników",
+    "list_mechanics": "📋 Lista wszystkich mechaników",
+    "users_list_title": "👥 Lista użytkowników",
+    "mechanics_list_title": "🔧 Lista mechaników",
     "add_user": "➕ Dodaj użytkownika",
     "add_mechanic": "➕ Dodaj mechanika",
     "remove_user": "➖ Usuń użytkownika",
@@ -116,7 +130,11 @@
     "user_removed": "✅ Użytkownik usunięty!",
     "mechanic_removed": "✅ Mechanik usunięty!",
     "user_not_found": "❌ Użytkownik nie znaleziony.",
-    "invalid_id": "❌ Nieprawidłowe ID Telegram."
+    "invalid_id": "❌ Nieprawidłowe ID Telegram.",
+    "no_users": "Brak użytkowników w systemie.",
+    "no_mechanics": "Brak mechaników w systemie.",
+    "language": "Język",
+    "language_not_set": "Nie ustawiono"
   },
 
   "calendar": {
@@ -127,7 +145,7 @@
     "day_overview": "📅 Rezerwacje na {date}:",
     "no_bookings": "Brak rezerwacji na {date}.",
     "no_available_days": "Brak rezerwacji w nadchodzących dniach.",
-    "entry": "{time} • {service}\n👤 {client}\n☎️ {phone}\n🔧 {mechanic}\n⚙️ {status}",
+    "entry": "🕐 {time} • ⏱️ {duration} min\n🛠️ {service}\n🚗 {brand} {model} • 📝 {number}\n👤 {client} • ☎️ {phone}\n🔧 {mechanic}\n⚙️ {status}",
     "unassigned": "brak mechanika",
     "status": {
       "pending": "Oczekuje",
@@ -195,11 +213,19 @@
   "errors": {
     "unknown": "❌ Wystąpił nieznany błąd.",
     "database": "❌ Błąd bazy danych.",
+    "database_error": "❌ Wystąpił błąd bazy danych. Spróbuj ponownie później.",
     "permission_denied": "❌ Brak uprawnień.",
     "invalid_input": "❌ Nieprawidłowe dane wejściowe.",
     "service_not_found": "❌ Usługa nie znaleziona.",
     "booking_not_found": "❌ Rezerwacja nie znaleziona.",
-    "time_slot_taken": "❌ Ten termin jest już zajęty."
+    "time_slot_taken": "❌ Ten termin jest już zajęty.",
+    "bad_request": "❌ Nieprawidłowe żądanie. Spróbuj ponownie.",
+    "not_found": "❌ Nie znaleziono żądanego elementu.",
+    "chat_migrated": "⚠️ Grupa została przeniesiona do supergrupy.",
+    "network_error": "❌ Wystąpił błąd sieci. Spróbuj ponownie później.",
+    "server_error": "❌ Wystąpił błąd serwera Telegram. Spróbuj ponownie później.",
+    "telegram_error": "❌ Wystąpił błąd podczas komunikacji z Telegram. Spróbuj ponownie.",
+    "rate_limit": "⏳ Zbyt wiele żądań. Poczekaj chwilę i spróbuj ponownie."
   }
 }
 

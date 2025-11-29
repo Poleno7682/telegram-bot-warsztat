@@ -4,6 +4,7 @@ import asyncio
 import sys
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
+from aiogram.types import Update
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
@@ -20,7 +21,12 @@ from app.bot.handlers import (
     calendar,
     health
 )
-from app.bot.middlewares import DbSessionMiddleware, AuthMiddleware, I18nMiddleware
+from app.bot.middlewares import (
+    DbSessionMiddleware,
+    AuthMiddleware,
+    I18nMiddleware,
+    ErrorHandlerMiddleware
+)
 from app.services.reminder_scheduler import ReminderScheduler
 
 # Configure logging (will be configured in main() based on settings)
@@ -41,6 +47,20 @@ async def on_startup(bot: Bot):
     except Exception as e:
         logger.error("Failed to initialize database", error=str(e), exc_info=True)
         raise
+    
+    # Sync system settings with .env file values on startup
+    try:
+        from app.config.database import AsyncSessionLocal
+        from app.repositories.settings import SettingsRepository
+        
+        async with AsyncSessionLocal() as session:
+            settings_repo = SettingsRepository(session)
+            await settings_repo.get_settings(sync_with_env=True)
+            await session.commit()
+            logger.info("System settings synced with .env file")
+    except Exception as e:
+        logger.warning("Failed to sync settings with .env", error=str(e), exc_info=True)
+        # Don't fail startup if settings sync fails
     
     # Get bot info
     bot_info = await bot.get_me()
@@ -90,6 +110,10 @@ async def main():
     dp = Dispatcher(storage=storage)
     
     # Register middlewares (order matters!)
+    # 0. Error handler - must be first to catch all errors
+    dp.message.middleware(ErrorHandlerMiddleware())
+    dp.callback_query.middleware(ErrorHandlerMiddleware())
+    
     # 1. Database session - provides session to all handlers
     dp.message.middleware(DbSessionMiddleware())
     dp.callback_query.middleware(DbSessionMiddleware())
@@ -115,6 +139,61 @@ async def main():
     # Register startup and shutdown handlers
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
+    
+    # Register global error handler for unhandled exceptions
+    from aiogram.exceptions import (
+        TelegramAPIError,
+        TelegramBadRequest,
+        TelegramForbiddenError,
+        TelegramUnauthorizedError,
+        TelegramConflictError,
+        TelegramNetworkError,
+        TelegramServerError,
+    )
+    
+    @dp.errors()
+    async def global_error_handler(update: Update, exception: Exception):
+        """
+        Global error handler for unhandled exceptions
+        This catches errors that weren't handled by middleware
+        """
+        from aiogram.types import Message, CallbackQuery
+        
+        # Log the error
+        logger.error(
+            "Unhandled exception in dispatcher",
+            error=str(exception),
+            error_type=type(exception).__name__,
+            update_type=update.event_type if hasattr(update, 'event_type') else None,
+            exc_info=True
+        )
+        
+        # Handle critical errors that should stop the bot
+        if isinstance(exception, (TelegramUnauthorizedError, TelegramConflictError)):
+            logger.critical("Critical error - stopping bot", error=str(exception))
+            raise  # Re-raise to stop the bot
+        
+        # Try to send error message to user if possible
+        try:
+            event = update.event if hasattr(update, 'event') else None
+            if isinstance(event, (Message, CallbackQuery)):
+                from app.core.i18n import get_text
+                from app.config.settings import get_settings
+                
+                settings = get_settings()
+                language = settings.supported_languages_list[0] if settings.supported_languages_list else "pl"
+                error_text = get_text("errors.unknown", language)
+                
+                if isinstance(event, Message):
+                    await event.answer(error_text)
+                elif isinstance(event, CallbackQuery):
+                    if isinstance(event.message, Message):
+                        await event.message.answer(error_text)
+                    await event.answer()
+        except Exception as e:
+            logger.debug("Failed to send error message in global handler", error=str(e))
+        
+        return True  # Suppress the exception
     
     # Start polling
     reminder_scheduler.start()

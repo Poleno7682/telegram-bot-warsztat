@@ -7,10 +7,11 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole, LANGUAGE_UNSET
+from app.models.user import User, UserRole
 from app.repositories.booking import BookingRepository
-from app.services.time_service import TimeService
 from app.bot.keyboards.inline import get_calendar_keyboard
+from app.utils.user_utils import get_user_language
+from app.utils.date_formatter import DateFormatter
 from app.bot.handlers.common import send_clean_menu
 
 router = Router(name="calendar")
@@ -49,9 +50,7 @@ async def show_calendar_menu(
     available_dates = await _get_available_calendar_dates(booking_repo)
     
     # Get language with fallback
-    from app.config.settings import get_settings
-    settings = get_settings()
-    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = get_user_language(user)
     
     text = (
         _("calendar.title") + "\n\n" + _("calendar.select_day")
@@ -96,11 +95,9 @@ async def show_calendar_day(
     available_dates = await _get_available_calendar_dates(booking_repo)
     
     # Get language with fallback
-    from app.config.settings import get_settings
-    settings = get_settings()
-    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = get_user_language(user)
     
-    date_text = TimeService.format_date(target_date, language)
+    date_text = DateFormatter.format_date(target_date, language)
     
     if not bookings:
         text = _("calendar.no_bookings").format(date=date_text)
@@ -115,8 +112,12 @@ async def show_calendar_day(
             status_text = _(status_key)
             text_lines.append(
                 _("calendar.entry").format(
-                    time=TimeService.format_time(booking.booking_date),
+                    time=DateFormatter.format_time(booking.booking_date),
+                    duration=booking.service.duration_minutes,
                     service=booking.service.get_name(language),
+                    brand=booking.car_brand,
+                    model=booking.car_model,
+                    number=booking.car_number,
                     client=booking.client_name,
                     phone=booking.client_phone,
                     mechanic=mechanic_name,

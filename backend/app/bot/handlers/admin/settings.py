@@ -7,10 +7,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message as TelegramMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers.common import send_clean_menu
+from app.bot.handlers.common import send_clean_menu, schedule_main_menu_return
 from app.bot.keyboards.inline import get_cancel_keyboard, get_settings_keyboard
 from app.bot.states.booking import SettingsStates
 from app.services.settings_management_service import SettingsManagementService
+from app.models.user import User
 
 router = Router(name="admin-settings")
 
@@ -83,6 +84,7 @@ async def work_start_entered(
 async def work_end_entered(
     message: TelegramMessage,
     session: AsyncSession,
+    user: User,
     _: Callable[[str], str],
     state: FSMContext,
 ):
@@ -104,6 +106,10 @@ async def work_end_entered(
         )
         await message.answer(_("settings.settings_updated"))
         await state.clear()
+        
+        # Return to main menu
+        if message.bot:
+            schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
     except ValueError:
         await message.answer(_("settings.invalid_time"))
 
@@ -128,6 +134,7 @@ async def update_time_step_start(
 async def time_step_entered(
     message: TelegramMessage,
     session: AsyncSession,
+    user: User,
     _: Callable[[str], str],
     state: FSMContext,
 ):
@@ -145,6 +152,10 @@ async def time_step_entered(
         await settings_mgmt.update_time_step(time_step)
         await message.answer(_("settings.settings_updated"))
         await state.clear()
+        
+        # Return to main menu
+        if message.bot:
+            schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
     except ValueError:
         await message.answer(_("errors.invalid_input"))
 
@@ -169,6 +180,7 @@ async def update_buffer_time_start(
 async def buffer_time_entered(
     message: TelegramMessage,
     session: AsyncSession,
+    user: User,
     _: Callable[[str], str],
     state: FSMContext,
 ):
@@ -186,6 +198,10 @@ async def buffer_time_entered(
         await settings_mgmt.update_buffer_time(buffer_time)
         await message.answer(_("settings.settings_updated"))
         await state.clear()
+        
+        # Return to main menu
+        if message.bot:
+            schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
     except ValueError:
         await message.answer(_("errors.invalid_input"))
 

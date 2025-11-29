@@ -15,9 +15,12 @@ class SettingsRepository(BaseRepository[SystemSettings]):
     def __init__(self, session: AsyncSession):
         super().__init__(SystemSettings, session)
     
-    async def get_settings(self) -> SystemSettings:
+    async def get_settings(self, sync_with_env: bool = False) -> SystemSettings:
         """
         Get system settings (singleton)
+        
+        Args:
+            sync_with_env: If True, syncs with .env file values (used on startup)
         
         Returns:
             System settings instance
@@ -30,24 +33,75 @@ class SettingsRepository(BaseRepository[SystemSettings]):
         if not settings:
             # Create default settings if not exists
             settings = await self.create_default_settings()
+        elif sync_with_env:
+            # Sync with .env file values (only when explicitly requested, e.g., on startup)
+            await self.sync_with_env(settings)
         
+        return settings
+    
+    async def sync_with_env(self, settings: SystemSettings) -> SystemSettings:
+        """
+        Sync settings with values from .env file
+        
+        Args:
+            settings: Existing settings instance
+            
+        Returns:
+            Updated settings instance
+        """
+        # Get default values from .env file
+        from app.config.settings import get_settings
+        env_settings = get_settings()
+        
+        # Parse work start/end times from .env (format: "HH:MM")
+        def parse_time(time_str: str) -> time:
+            """Parse time string in format HH:MM"""
+            parts = time_str.split(":")
+            return time(int(parts[0]), int(parts[1]))
+        
+        work_start = parse_time(env_settings.default_work_start)
+        work_end = parse_time(env_settings.default_work_end)
+        
+        # Update settings from .env
+        settings.work_start_time = work_start
+        settings.work_end_time = work_end
+        settings.time_step_minutes = env_settings.default_time_step
+        settings.buffer_time_minutes = env_settings.default_buffer_time
+        settings.timezone = env_settings.timezone
+        # booking_days_ahead doesn't have a .env default, keep existing value
+        
+        await self.session.flush()
+        await self.session.refresh(settings)
         return settings
     
     async def create_default_settings(self) -> SystemSettings:
         """
-        Create default system settings
+        Create default system settings using values from .env file
         
         Returns:
             Created settings
         """
+        # Get default values from .env file
+        from app.config.settings import get_settings
+        env_settings = get_settings()
+        
+        # Parse work start/end times from .env (format: "HH:MM")
+        def parse_time(time_str: str) -> time:
+            """Parse time string in format HH:MM"""
+            parts = time_str.split(":")
+            return time(int(parts[0]), int(parts[1]))
+        
+        work_start = parse_time(env_settings.default_work_start)
+        work_end = parse_time(env_settings.default_work_end)
+        
         settings = SystemSettings(
             id=1,
-            work_start_time=time(8, 0),
-            work_end_time=time(16, 0),
-            time_step_minutes=10,
-            buffer_time_minutes=15,
-            timezone="Europe/Warsaw",
-            booking_days_ahead=14
+            work_start_time=work_start,
+            work_end_time=work_end,
+            time_step_minutes=env_settings.default_time_step,
+            buffer_time_minutes=env_settings.default_buffer_time,
+            timezone=env_settings.timezone,
+            booking_days_ahead=14  # This doesn't have a .env default, keep hardcoded
         )
         self.session.add(settings)
         await self.session.flush()

@@ -39,16 +39,22 @@ class BookingRepository(BaseRepository[Booking]):
     
     async def get_by_date(self, target_date: date) -> List[Booking]:
         """
-        Get all bookings for a specific date
+        Get all bookings for a specific date (in local timezone)
         
         Args:
-            target_date: Target date
+            target_date: Target date (in local timezone)
             
         Returns:
             List of bookings
         """
-        start_datetime = datetime.combine(target_date, datetime.min.time())
-        end_datetime = datetime.combine(target_date, datetime.max.time())
+        from app.core.timezone_utils import get_local_timezone
+        
+        tz = get_local_timezone()
+        
+        # Create start and end of day in local timezone
+        # Since we store booking_date in local timezone, compare directly in local timezone
+        start_datetime_local = tz.localize(datetime.combine(target_date, datetime.min.time()))
+        end_datetime_local = tz.localize(datetime.combine(target_date, datetime.max.time()))
         
         result = await self.session.execute(
             select(Booking)
@@ -58,8 +64,8 @@ class BookingRepository(BaseRepository[Booking]):
             )
             .where(
                 and_(
-                    Booking.booking_date >= start_datetime,
-                    Booking.booking_date <= end_datetime,
+                    Booking.booking_date >= start_datetime_local,
+                    Booking.booking_date <= end_datetime_local,
                     Booking.status.in_([BookingStatus.ACCEPTED, BookingStatus.NEGOTIATING, BookingStatus.PENDING])
                 )
             )

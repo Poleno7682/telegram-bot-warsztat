@@ -15,7 +15,8 @@ from app.bot.keyboards.inline import (
     get_service_management_keyboard,
 )
 from app.bot.states.booking import AddServiceStates
-from app.models.user import User, LANGUAGE_UNSET
+from app.models.user import User
+from app.utils.user_utils import get_user_language
 from app.services.service_management_service import ServiceManagementService
 
 router = Router(name="admin-services")
@@ -56,9 +57,7 @@ async def list_services(
         return
 
     # Get language with fallback
-    from app.config.settings import get_settings
-    settings = get_settings()
-    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = get_user_language(user)
     
     text = _("service_management.title") + "\n\n"
     for service in services:
@@ -86,9 +85,7 @@ async def add_service_start(
         reply_markup=get_cancel_keyboard(_),
     )
     # Get language with fallback
-    from app.config.settings import get_settings
-    settings = get_settings()
-    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = get_user_language(user)
     await state.update_data(source_language=language)
     await state.set_state(AddServiceStates.entering_name_pl)
     await callback.answer()
@@ -280,9 +277,7 @@ async def edit_service(
         return
 
     # Get language with fallback
-    from app.config.settings import get_settings
-    settings = get_settings()
-    language = user.language if (user.language and user.language != LANGUAGE_UNSET) else (settings.supported_languages_list[0] if settings.supported_languages_list else "pl")
+    language = get_user_language(user)
     
     text = f"""
 {_("service_management.title")}

@@ -4,14 +4,16 @@ from typing import Callable
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message as TelegramMessage
+from aiogram.types import CallbackQuery, Message as TelegramMessage, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu
+from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu, safe_callback_answer
 from app.bot.keyboards.inline import get_cancel_keyboard, get_user_management_keyboard
 from app.bot.states.booking import UserManagementStates
 from app.core.service_factory import ServiceFactory
 from app.models.user import User, UserRole
+from app.repositories.user import UserRepository
 
 router = Router(name="admin-users")
 
@@ -24,7 +26,7 @@ async def manage_users_menu(callback: CallbackQuery, _: Callable[[str], str]):
         text=_("user_management.title") + "\n\n" + _("user_management.select_action"),
         reply_markup=get_user_management_keyboard(_),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "admin:add_user")
@@ -40,7 +42,7 @@ async def add_user_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(UserManagementStates.adding_user)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(UserManagementStates.adding_user)
@@ -89,7 +91,7 @@ async def remove_user_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(UserManagementStates.removing_user)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(UserManagementStates.removing_user)
@@ -122,4 +124,51 @@ async def remove_user_process(
 
     await state.clear()
     schedule_main_menu_return(message.bot, message.chat.id, user)
+
+
+@router.callback_query(F.data == "admin:list_users")
+async def list_users(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    _: Callable[[str], str],
+):
+    """Show list of all users."""
+    user_repo = UserRepository(session)
+    users = await user_repo.get_all_users()
+    
+    if not users:
+        await send_clean_menu(
+            callback=callback,
+            text=_("user_management.no_users"),
+            reply_markup=get_user_management_keyboard(_),
+        )
+        await safe_callback_answer(callback)
+        return
+    
+    # Format users list
+    lines = [_("user_management.users_list_title") + f" ({len(users)}):\n"]
+    for idx, user in enumerate(users, 1):
+        name = user.full_name
+        username = f" (@{user.username})" if user.username else ""
+        telegram_id = user.telegram_id
+        language = user.language if user.language != "unset" else _("user_management.language_not_set")
+        lines.append(f"{idx}. {name}{username}\n   ID: {telegram_id} | {_('user_management.language')}: {language}")
+    
+    text = "\n".join(lines)
+    
+    # Create keyboard with back button
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.back"),
+            callback_data="admin:manage_users"
+        )
+    )
+    
+    await send_clean_menu(
+        callback=callback,
+        text=text,
+        reply_markup=builder.as_markup(),
+    )
+    await safe_callback_answer(callback)
 

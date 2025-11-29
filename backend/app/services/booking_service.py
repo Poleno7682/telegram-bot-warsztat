@@ -10,9 +10,13 @@ from app.models.user import User
 from app.repositories.booking import BookingRepository
 from app.repositories.service import ServiceRepository
 from app.repositories.user import UserRepository
-from app.core.timezone_utils import ensure_utc
-from .translation_service import TranslationService
+from app.core.timezone_utils import ensure_utc, ensure_local
+from app.core.logging_config import get_logger
+from .translation_service import translate_to_all_languages
 from .time_service import TimeService
+
+
+logger = get_logger(__name__)
 
 
 class BookingService:
@@ -72,12 +76,24 @@ class BookingService:
         if not service or not service.is_active:
             return None, "Service not found or inactive"
         
-        # Ensure booking_datetime is in UTC
-        booking_datetime_utc = ensure_utc(booking_datetime)
+        # Ensure booking_datetime is timezone-aware and in local timezone
+        # Store time in local timezone (not UTC) as requested
+        booking_datetime_local = ensure_local(booking_datetime)
         
-        # Check if time slot is available
+        # Log booking creation for debugging
+        logger.info(
+            "Creating booking with datetime",
+            original_datetime=str(booking_datetime),
+            original_tzinfo=str(booking_datetime.tzinfo) if booking_datetime.tzinfo else "None",
+            original_minute=booking_datetime.minute if booking_datetime.tzinfo else None,
+            local_datetime=str(booking_datetime_local),
+            local_hour=booking_datetime_local.hour,
+            local_minute=booking_datetime_local.minute
+        )
+        
+        # Check if time slot is available (use local timezone)
         is_available = await self.time_service.is_slot_available(
-            booking_datetime_utc,
+            booking_datetime_local,
             service.duration_minutes
         )
         
@@ -85,12 +101,12 @@ class BookingService:
             return None, "Time slot is not available"
         
         # Translate description to all languages
-        translations = await TranslationService.translate_to_all_languages(
+        translations = await translate_to_all_languages(
             description,
             source_lang=language,
         )
         
-        # Create booking (always in UTC)
+        # Create booking (store in local timezone as requested)
         booking = await self.booking_repo.create_booking(
             creator_id=creator.id,
             service_id=service_id,
@@ -102,13 +118,24 @@ class BookingService:
             description_pl=translations["pl"],
             description_ru=translations["ru"],
             original_language=language,
-            booking_date=booking_datetime_utc
+            booking_date=booking_datetime_local
         )
         
         await self.session.commit()
         
         # Load relations
         booking = await self.booking_repo.get_with_relations(booking.id)
+        
+        # Log for debugging (can be removed later)
+        if booking:
+            logger.info(
+                "Booking created - reading back from DB",
+                booking_id=booking.id,
+                booking_date_from_db=str(booking.booking_date),
+                booking_date_tzinfo=str(booking.booking_date.tzinfo) if booking.booking_date.tzinfo else "None",
+                booking_date_hour=booking.booking_date.hour,
+                booking_date_minute=booking.booking_date.minute
+            )
         
         return booking, "Booking created successfully"
     
@@ -186,7 +213,7 @@ class BookingService:
         await self.session.commit()
         
         # Load relations
-        booking = await self.booking_repo.get_with_relations(booking.id)
+        booking = await self.booking_repo.get_with_relations(booking_id)
         
         return booking, "Booking accepted"
     
@@ -223,7 +250,7 @@ class BookingService:
         await self.session.commit()
         
         # Load relations
-        booking = await self.booking_repo.get_with_relations(booking.id)
+        booking = await self.booking_repo.get_with_relations(booking_id)
         
         return booking, "Booking rejected"
     
@@ -254,9 +281,12 @@ class BookingService:
         if not booking:
             return None, "Booking not found"
         
-        # Check if new time slot is available
+        # Ensure new_datetime is in local timezone
+        new_datetime_local = ensure_local(new_datetime)
+        
+        # Check if new time slot is available (use local timezone)
         is_available = await self.time_service.is_slot_available(
-            new_datetime,
+            new_datetime_local,
             booking.service.duration_minutes,
             exclude_booking_id=booking_id
         )
@@ -264,18 +294,72 @@ class BookingService:
         if not is_available:
             return None, "Proposed time slot is not available"
         
-        # Propose new time
+        # Propose new time (store in local timezone)
         booking = await self.booking_repo.propose_new_time(
             booking_id,
-            new_datetime,
+            new_datetime_local,
             mechanic.id
         )
         await self.session.commit()
         
         # Load relations
-        booking = await self.booking_repo.get_with_relations(booking.id)
+        booking = await self.booking_repo.get_with_relations(booking_id)
         
         return booking, "New time proposed"
+    
+    async def propose_new_time_by_user(
+        self,
+        booking_id: int,
+        creator_telegram_id: int,
+        new_datetime: datetime
+    ) -> Tuple[Optional[Booking], str]:
+        """
+        Propose new time for booking by user (creator)
+        
+        Args:
+            booking_id: Booking ID
+            creator_telegram_id: Creator's Telegram ID
+            new_datetime: Proposed new date and time
+            
+        Returns:
+            Tuple of (Booking, message) or (None, error_message)
+        """
+        # Get creator
+        creator = await self.user_repo.get_by_telegram_id(creator_telegram_id)
+        if not creator:
+            return None, "User not found"
+        
+        # Get booking
+        booking = await self.booking_repo.get_with_relations(booking_id)
+        if not booking:
+            return None, "Booking not found"
+        
+        # Verify creator
+        if booking.creator_id != creator.id:
+            return None, "Unauthorized"
+        
+        # Ensure new_datetime is in local timezone
+        new_datetime_local = ensure_local(new_datetime)
+        
+        # Check if new time slot is available (use local timezone)
+        is_available = await self.time_service.is_slot_available(
+            new_datetime_local,
+            booking.service.duration_minutes,
+            exclude_booking_id=booking_id
+        )
+        
+        if not is_available:
+            return None, "Proposed time slot is not available"
+        
+        # Propose new time (set proposed_date, status to NEGOTIATING, store in local timezone)
+        booking.proposed_date = new_datetime_local
+        booking.status = BookingStatus.NEGOTIATING
+        await self.session.commit()
+        
+        # Load relations
+        booking = await self.booking_repo.get_with_relations(booking_id)
+        
+        return booking, "New time proposed by user"
     
     async def confirm_proposed_time(
         self,
@@ -313,7 +397,7 @@ class BookingService:
         await self.session.commit()
         
         # Load relations
-        booking = await self.booking_repo.get_with_relations(booking.id)
+        booking = await self.booking_repo.get_with_relations(booking_id)
         
         return booking, "Time confirmed"
     

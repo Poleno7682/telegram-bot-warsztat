@@ -14,8 +14,7 @@ class BookingStates(StatesGroup):
     selecting_time = State()
     
     # Car information
-    entering_car_brand = State()
-    entering_car_model = State()
+    entering_car_brand_model = State()
     entering_car_number = State()
     
     # Client information

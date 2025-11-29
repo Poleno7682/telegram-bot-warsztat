@@ -48,6 +48,10 @@ class UserRepository(BaseRepository[User]):
         """Get all active mechanics"""
         return await self.get_by_role(UserRole.MECHANIC)
     
+    async def get_all_users(self) -> List[User]:
+        """Get all active users (with USER role)"""
+        return await self.get_by_role(UserRole.USER)
+    
     async def get_all_admins(self) -> List[User]:
         """Get all active admins"""
         return await self.get_by_role(UserRole.ADMIN)

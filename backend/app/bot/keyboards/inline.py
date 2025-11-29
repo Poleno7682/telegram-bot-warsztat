@@ -235,7 +235,8 @@ def get_services_keyboard(
 
 def get_dates_keyboard(
     dates: List[date],
-    language: str = "pl"
+    language: str = "pl",
+    _: Callable[[str], str] | None = None
 ) -> InlineKeyboardMarkup:
     """
     Get dates selection keyboard
@@ -243,13 +244,30 @@ def get_dates_keyboard(
     Args:
         dates: List of available dates
         language: Language code
+        _: Translation function (optional)
     """
-    from app.services.time_service import TimeService
+    from app.utils.date_formatter import DateFormatter
+    from datetime import date, timedelta
+    from app.core.i18n import get_text
     
     builder = InlineKeyboardBuilder()
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    
+    # Get translation function if not provided
+    if _ is None:
+        def _(key: str) -> str:
+            return get_text(key, language)
     
     for target_date in dates:
-        date_text = TimeService.format_date(target_date, language)
+        # Check if date is today or tomorrow
+        if target_date == today:
+            date_text = _("calendar.today")
+        elif target_date == tomorrow:
+            date_text = _("calendar.tomorrow")
+        else:
+            date_text = DateFormatter.format_date(target_date, language)
+        
         builder.row(
             InlineKeyboardButton(
                 text=date_text,
@@ -257,10 +275,11 @@ def get_dates_keyboard(
             )
         )
     
+    cancel_text = _("common.cancel") if _ else "❌ Anuluj / Отмена"
     builder.row(
         InlineKeyboardButton(
-            text="❌ Anuluj / Отмена",
-            callback_data="cancel"
+            text=cancel_text,
+            callback_data="booking:cancel"
         )
     )
     
@@ -269,7 +288,8 @@ def get_dates_keyboard(
 
 def get_times_keyboard(
     times: List[datetime],
-    language: str = "pl"
+    language: str = "pl",
+    _: Callable[[str], str] | None = None
 ) -> InlineKeyboardMarkup:
     """
     Get times selection keyboard
@@ -277,8 +297,9 @@ def get_times_keyboard(
     Args:
         times: List of available datetime slots
         language: Language code
+        _: Translation function (optional)
     """
-    from app.services.time_service import TimeService
+    from app.utils.date_formatter import DateFormatter
     
     builder = InlineKeyboardBuilder()
     
@@ -287,17 +308,18 @@ def get_times_keyboard(
         row_times = times[i:i+3]
         buttons = [
             InlineKeyboardButton(
-                text=TimeService.format_time(t),
+                text=DateFormatter.format_time(t),
                 callback_data=f"time:{t.isoformat()}"
             )
             for t in row_times
         ]
         builder.row(*buttons)
     
+    cancel_text = _("common.cancel") if _ else "❌ Anuluj / Отмена"
     builder.row(
         InlineKeyboardButton(
-            text="❌ Anuluj / Отмена",
-            callback_data="cancel"
+            text=cancel_text,
+            callback_data="booking:cancel"
         )
     )
     
@@ -383,6 +405,12 @@ def get_user_management_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarku
     
     builder.row(
         InlineKeyboardButton(
+            text=_("user_management.list_users"),
+            callback_data="admin:list_users"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
             text=_("user_management.add_user"),
             callback_data="admin:add_user"
         )
@@ -412,6 +440,12 @@ def get_mechanic_management_keyboard(_: Callable[[str], str]) -> InlineKeyboardM
     """
     builder = InlineKeyboardBuilder()
     
+    builder.row(
+        InlineKeyboardButton(
+            text=_("user_management.list_mechanics"),
+            callback_data="admin:list_mechanics"
+        )
+    )
     builder.row(
         InlineKeyboardButton(
             text=_("user_management.add_mechanic"),
@@ -579,7 +613,7 @@ def get_calendar_keyboard(
     """
     Get calendar navigation keyboard limited to dates with bookings
     """
-    from app.services.time_service import TimeService
+    from app.utils.date_formatter import DateFormatter
     
     builder = InlineKeyboardBuilder()
     today = date.today()
@@ -591,7 +625,7 @@ def get_calendar_keyboard(
         elif target_date == tomorrow:
             label = _("calendar.tomorrow")
         else:
-            label = TimeService.format_date(target_date, language)
+            label = DateFormatter.format_date(target_date, language)
         
         builder.row(
             InlineKeyboardButton(
@@ -697,7 +731,33 @@ def get_cancel_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(
             text=_("common.cancel"),
-            callback_data="cancel"
+            callback_data="booking:cancel"
+        )
+    )
+    
+    return builder.as_markup()
+
+
+def get_skip_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
+    """
+    Get skip keyboard for optional fields
+    
+    Args:
+        _: Translation function
+    """
+    builder = InlineKeyboardBuilder()
+    
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.skip"),
+            callback_data="booking:skip_description"
+        )
+    )
+    
+    builder.row(
+        InlineKeyboardButton(
+            text=_("common.cancel"),
+            callback_data="booking:cancel"
         )
     )
     

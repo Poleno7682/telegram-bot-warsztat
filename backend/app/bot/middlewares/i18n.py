@@ -1,11 +1,12 @@
 """Internationalization middleware"""
 
-from typing import Callable, Dict, Any, Awaitable
+from typing import Callable, Dict, Any, Awaitable, Optional
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
-from app.models.user import User, LANGUAGE_UNSET
+from app.models.user import User
 from app.core.i18n import get_i18n_loader
+from app.utils.user_utils import get_user_language
 
 
 class I18nMiddleware(BaseMiddleware):
@@ -33,10 +34,10 @@ class I18nMiddleware(BaseMiddleware):
             Handler result
         """
         # Get user from data (injected by AuthMiddleware)
-        user: User = data.get("user")
+        user: Optional[User] = data.get("user")
         # Use user's language or fallback to first supported language
-        if user and user.language and user.language != LANGUAGE_UNSET:
-            language = user.language
+        if user:
+            language = get_user_language(user)
         else:
             from app.config.settings import get_settings
             settings = get_settings()

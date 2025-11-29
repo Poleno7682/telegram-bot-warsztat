@@ -50,6 +50,14 @@ class SettingsManagementService:
             end_time=end_time
         )
         await self.session.commit()
+        
+        # Update .env file with new values
+        from app.utils.env_updater import update_env_file
+        update_env_file(
+            default_work_start=start_time.strftime("%H:%M"),
+            default_work_end=end_time.strftime("%H:%M")
+        )
+        
         return settings
     
     async def update_time_step(self, time_step_minutes: int) -> SystemSettings:
@@ -66,6 +74,11 @@ class SettingsManagementService:
             time_step_minutes=time_step_minutes
         )
         await self.session.commit()
+        
+        # Update .env file with new value
+        from app.utils.env_updater import update_env_file
+        update_env_file(default_time_step=time_step_minutes)
+        
         return settings
     
     async def update_buffer_time(self, buffer_time_minutes: int) -> SystemSettings:
@@ -82,5 +95,10 @@ class SettingsManagementService:
             buffer_time_minutes=buffer_time_minutes
         )
         await self.session.commit()
+        
+        # Update .env file with new value
+        from app.utils.env_updater import update_env_file
+        update_env_file(default_buffer_time=buffer_time_minutes)
+        
         return settings
 
