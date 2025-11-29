@@ -92,7 +92,7 @@ backend/
 ### 1. Клонирование репозитория
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Poleno7682/telegram-bot-warsztat.git
 cd backend
 ```
 
@@ -143,7 +143,7 @@ sudo apt install postgresql postgresql-contrib -y
 ```bash
 # Загрузка проекта на сервер
 cd /opt
-sudo git clone <repository-url> telegram-bot
+sudo git clone https://github.com/Poleno7682/telegram-bot-warsztat.git telegram-bot
 cd telegram-bot/backend
 ```
 
