@@ -1,4 +1,4 @@
-/opt/telegram-bot/backend/*.log {
+/root/telegram-bot/backend/*.log {
     daily
     rotate 7
     compress

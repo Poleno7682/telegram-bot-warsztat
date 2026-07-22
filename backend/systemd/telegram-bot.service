@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=bot
 Group=bot
-WorkingDirectory=/opt/telegram-bot/backend
+WorkingDirectory=/root/telegram-bot/backend
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 ExecStart=/usr/bin/python3 -m app.main
 Restart=always

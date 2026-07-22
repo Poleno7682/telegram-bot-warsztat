@@ -15,7 +15,7 @@ fi
 
 # Variables
 BOT_USER="bot"
-BOT_DIR="/opt/telegram-bot"
+BOT_DIR="/root/telegram-bot"
 
 # 1. Create user for bot
 echo "Creating user for bot..."
