@@ -8,7 +8,14 @@ aiosqlite==0.20.0
 asyncpg==0.30.0
 alembic==1.14.0
 
-# Translation
+# UI i18n (gettext catalogs under locales/, see locales/README.md).
+# Babel isn't needed to *read* compiled .mo files at runtime (aiogram's I18n
+# uses stdlib gettext for that) - it's needed to compile locales/*/LC_MESSAGES/
+# messages.po -> messages.mo, which the Docker build does on every image build.
+Babel==2.18.0
+
+# Translation (auto-translation of user-entered booking descriptions - not
+# related to the bot's own UI language, see app/services/translation_service.py)
 googletrans==4.0.0rc1
 deep-translator==1.11.4
 

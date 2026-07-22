@@ -1,0 +1,631 @@
+# Russian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-07-22 05:12+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "booking.actions.accept"
+msgstr "✅ Принять"
+
+msgid "booking.actions.change_time"
+msgstr "⏰ Изменить время"
+
+msgid "booking.actions.confirm_time"
+msgstr "✅ Подтвердить время"
+
+msgid "booking.actions.propose_new_time"
+msgstr "🔄 Предложить новое время"
+
+msgid "booking.actions.reject"
+msgstr "❌ Отклонить"
+
+msgid "booking.confirm.details"
+msgstr ""
+"📋 Детали записи:\n"
+"\n"
+"🚗 Автомобиль: {brand} {model}\n"
+"📝 Рег. номер: {number}\n"
+"👤 Клиент: {client_name}\n"
+"📞 Телефон: {client_phone}\n"
+"🛠️ Услуга: {service}\n"
+"📅 Дата: {date}\n"
+"🕐 Время: {time}\n"
+"\n"
+"💬 Описание:\n"
+"{description}"
+
+msgid "booking.confirm.error"
+msgstr "❌ Ошибка при создании записи."
+
+msgid "booking.confirm.success"
+msgstr ""
+"✅ Запись создана!\n"
+"\n"
+"Ожидает подтверждения механика."
+
+msgid "booking.confirm.time_proposed"
+msgstr ""
+"✅ Новое время предложено!\n"
+"\n"
+"Ожидает подтверждения пользователя."
+
+msgid "booking.confirm.title"
+msgstr "✅ Подтвердите запись"
+
+msgid "booking.create.booking_cancelled"
+msgstr "❌ Запись отменена. Возврат в главное меню."
+
+msgid "booking.create.enter_car_brand"
+msgstr "Введите марку автомобиля:"
+
+msgid "booking.create.enter_car_brand_model"
+msgstr "Введите марку и модель автомобиля (например, Toyota Corolla или Toyota, Corolla):"
+
+msgid "booking.create.enter_car_model"
+msgstr "Введите модель автомобиля:"
+
+msgid "booking.create.enter_car_number"
+msgstr "Введите регистрационный номер:"
+
+msgid "booking.create.enter_client_name"
+msgstr "Введите имя клиента:"
+
+msgid "booking.create.enter_client_phone"
+msgstr "Введите номер телефона клиента (только цифры):"
+
+msgid "booking.create.enter_description"
+msgstr "Введите краткое описание проблемы:"
+
+msgid "booking.create.no_available_dates"
+msgstr "Нет доступных дат для выбранной услуги."
+
+msgid "booking.create.no_available_slots"
+msgstr "Нет доступных слотов на выбранный день."
+
+msgid "booking.create.no_description"
+msgstr "(Описание отсутствует)"
+
+msgid "booking.create.phone_invalid"
+msgstr "❌ Неверный номер телефона. Введите только цифры."
+
+msgid "booking.create.select_date"
+msgstr "Выберите дату:"
+
+msgid "booking.create.select_service"
+msgstr "Выберите услугу:"
+
+msgid "booking.create.select_time"
+msgstr "Выберите время:"
+
+msgid "booking.create.title"
+msgstr "➕ Новая запись"
+
+msgid "booking.create.translating"
+msgstr "⏳ Перевод описания..."
+
+msgid "booking.mechanic.my_bookings_title"
+msgstr "📅 Мои подтвержденные записи"
+
+msgid "booking.mechanic.select_day"
+msgstr "Выберите день, чтобы посмотреть записи:"
+
+msgid "booking.my_bookings.no_bookings"
+msgstr "У вас пока нет записей."
+
+msgid "booking.my_bookings.title"
+msgstr "📅 Мои записи"
+
+msgid "booking.notification.accepted"
+msgstr ""
+"✅ Запись принята!\n"
+"\n"
+"🔧 Механик: {mechanic_name}\n"
+"\n"
+"📋 Детали:\n"
+"{details}"
+
+msgid "booking.notification.accepted_mechanic"
+msgstr "✅ Запись принята"
+
+msgid "booking.notification.new_booking"
+msgstr ""
+"🔔 Новая запись!\n"
+"\n"
+"👤 Создана: {user_name}\n"
+"🚗 Автомобиль: {brand} {model}\n"
+"📝 Рег. номер: {number}\n"
+"👤 Клиент: {client_name}\n"
+"📞 Телефон: {client_phone}\n"
+"🛠️ Услуга: {service}\n"
+"📅 Дата: {date}\n"
+"🕐 Время: {time}\n"
+"\n"
+"💬 Описание:\n"
+"{description}"
+
+msgid "booking.notification.rejected"
+msgstr ""
+"❌ Запись отклонена\n"
+"\n"
+"🔧 Механик: {mechanic_name}\n"
+"\n"
+"📋 Детали:\n"
+"{details}"
+
+msgid "booking.notification.reminder"
+msgstr ""
+"⏰ Напоминание: запись {time_left}\n"
+"\n"
+"{details}"
+
+msgid "booking.notification.time_change"
+msgstr ""
+"⏰ Предложение изменить время\n"
+"\n"
+"🔧 Механик: {mechanic_name}\n"
+"📅 Новое время: {date} {time}\n"
+"\n"
+"📋 Детали:\n"
+"{details}"
+
+msgid "booking.notification.time_confirmed"
+msgstr ""
+"✅ Клиент подтвердил предложенное время!\n"
+"\n"
+"👤 Клиент: {user_name}\n"
+"📅 Подтвержденное время: {date} {time}\n"
+"\n"
+"📋 Детали:\n"
+"{details}"
+
+msgid "booking.pending.no_bookings"
+msgstr "Нет ожидающих записей."
+
+msgid "booking.pending.title"
+msgstr "⏳ Ожидающие записи"
+
+msgid "booking.reminder.time_left_1h"
+msgstr "через 1 час"
+
+msgid "booking.reminder.time_left_30m"
+msgstr "через 30 минут"
+
+msgid "booking.reminder.time_left_3h"
+msgstr "через 3 часа"
+
+msgid "calendar.day_overview"
+msgstr "📅 Записи на {date}:"
+
+msgid "calendar.entry"
+msgstr ""
+"🕐 {time} • ⏱️ {duration} min\n"
+"🛠️ {service}\n"
+"🚗 {brand} {model} • 📝 {number}\n"
+"👤 {client} • ☎️ {phone}\n"
+"🔧 {mechanic}\n"
+"⚙️ {status}"
+
+msgid "calendar.no_available_days"
+msgstr "Нет записей в ближайшие дни."
+
+msgid "calendar.no_bookings"
+msgstr "На {date} записей нет."
+
+msgid "calendar.select_day"
+msgstr "Выберите день, чтобы посмотреть записи:"
+
+msgid "calendar.status.accepted"
+msgstr "Подтверждена"
+
+msgid "calendar.status.cancelled"
+msgstr "Отменена"
+
+msgid "calendar.status.completed"
+msgstr "Завершена"
+
+msgid "calendar.status.negotiating"
+msgstr "Переговоры"
+
+msgid "calendar.status.pending"
+msgstr "Ожидает"
+
+msgid "calendar.status.rejected"
+msgstr "Отклонена"
+
+msgid "calendar.title"
+msgstr "📆 Календарь записей"
+
+msgid "calendar.today"
+msgstr "📅 Сегодня"
+
+msgid "calendar.tomorrow"
+msgstr "📆 Завтра"
+
+msgid "calendar.unassigned"
+msgstr "не назначен"
+
+msgid "common.back"
+msgstr "Назад"
+
+msgid "common.cancel"
+msgstr "Отмена"
+
+msgid "common.close"
+msgstr "Закрыть"
+
+msgid "common.confirm"
+msgstr "Подтвердить"
+
+msgid "common.delete"
+msgstr "Удалить"
+
+msgid "common.edit"
+msgstr "Редактировать"
+
+msgid "common.error"
+msgstr "Ошибка"
+
+msgid "common.loading"
+msgstr "Загрузка..."
+
+msgid "common.name"
+msgstr "Название"
+
+msgid "common.no"
+msgstr "Нет"
+
+msgid "common.save"
+msgstr "Сохранить"
+
+msgid "common.skip"
+msgstr "⏭️ Пропустить"
+
+msgid "common.success"
+msgstr "Успешно"
+
+msgid "common.yes"
+msgstr "Да"
+
+msgid "errors.bad_request"
+msgstr "❌ Неверный запрос. Попробуйте снова."
+
+msgid "errors.booking_not_found"
+msgstr "❌ Запись не найдена."
+
+msgid "errors.chat_migrated"
+msgstr "⚠️ Группа была перенесена в супергруппу."
+
+msgid "errors.database"
+msgstr "❌ Ошибка базы данных."
+
+msgid "errors.database_error"
+msgstr "❌ Произошла ошибка базы данных. Попробуйте позже."
+
+msgid "errors.invalid_input"
+msgstr "❌ Неверные входные данные."
+
+msgid "errors.network_error"
+msgstr "❌ Произошла сетевая ошибка. Попробуйте позже."
+
+msgid "errors.not_found"
+msgstr "❌ Запрашиваемый элемент не найден."
+
+msgid "errors.permission_denied"
+msgstr "❌ Нет прав доступа."
+
+msgid "errors.rate_limit"
+msgstr "⏳ Слишком много запросов. Подождите немного и попробуйте снова."
+
+msgid "errors.server_error"
+msgstr "❌ Произошла ошибка сервера Telegram. Попробуйте позже."
+
+msgid "errors.service_not_found"
+msgstr "❌ Услуга не найдена."
+
+msgid "errors.telegram_error"
+msgstr "❌ Произошла ошибка при общении с Telegram. Попробуйте снова."
+
+msgid "errors.time_slot_taken"
+msgstr "❌ Это время уже занято."
+
+msgid "errors.unknown"
+msgstr "❌ Произошла неизвестная ошибка."
+
+msgid "menu.admin.calendar"
+msgstr "📆 Календарь записей"
+
+msgid "menu.admin.manage_mechanics"
+msgstr "🔧 Управление механиками"
+
+msgid "menu.admin.manage_services"
+msgstr "🛠️ Управление услугами"
+
+msgid "menu.admin.manage_settings"
+msgstr "⚙️ Настройки сервиса"
+
+msgid "menu.admin.manage_users"
+msgstr "👥 Управление пользователями"
+
+msgid "menu.admin.statistics"
+msgstr "📊 Статистика"
+
+msgid "menu.admin.title"
+msgstr "👨‍💼 Панель администратора"
+
+msgid "menu.main.help"
+msgstr "❓ Помощь"
+
+msgid "menu.main.my_bookings"
+msgstr "📅 Мои записи"
+
+msgid "menu.main.new_booking"
+msgstr "➕ Новая запись"
+
+msgid "menu.main.settings"
+msgstr "⚙️ Настройки"
+
+msgid "menu.main.title"
+msgstr "📋 Главное меню"
+
+msgid "menu.main.user_settings"
+msgstr "⚙️ Мои настройки"
+
+msgid "menu.mechanic.add_service"
+msgstr "➕ Добавить услугу"
+
+msgid "menu.mechanic.calendar"
+msgstr "📆 Календарь записей"
+
+msgid "menu.mechanic.manage_services"
+msgstr "🛠️ Управление услугами"
+
+msgid "menu.mechanic.my_bookings"
+msgstr "📅 Мои записи"
+
+msgid "menu.mechanic.pending_bookings"
+msgstr "⏳ Ожидающие записи"
+
+msgid "menu.mechanic.title"
+msgstr "🔧 Панель механика"
+
+msgid "service_management.add_service"
+msgstr "➕ Добавить услугу"
+
+msgid "service_management.confirm_translation"
+msgstr "✅ Подтвердить"
+
+msgid "service_management.delete_service"
+msgstr "🗑️ Удалить услугу"
+
+msgid "service_management.duration"
+msgstr "Продолжительность"
+
+msgid "service_management.edit_service"
+msgstr "✏️ Редактировать услугу"
+
+msgid "service_management.edit_translation"
+msgstr "✏️ Редактировать вручную"
+
+msgid "service_management.enter_duration"
+msgstr "Введите продолжительность (в минутах):"
+
+msgid "service_management.enter_name"
+msgstr "Введите название услуги (на вашем языке):"
+
+msgid "service_management.enter_name_pl"
+msgstr "Введите название услуги (польский):"
+
+msgid "service_management.enter_name_ru"
+msgstr "Введите название услуги (русский):"
+
+msgid "service_management.enter_price"
+msgstr "Введите цену:"
+
+msgid "service_management.list_services"
+msgstr "📋 Список услуг"
+
+msgid "service_management.no_services"
+msgstr "Нет услуг в системе."
+
+msgid "service_management.service_added"
+msgstr "✅ Услуга добавлена!"
+
+msgid "service_management.service_deleted"
+msgstr "✅ Услуга удалена!"
+
+msgid "service_management.service_updated"
+msgstr "✅ Услуга обновлена!"
+
+msgid "service_management.title"
+msgstr "🛠️ Управление услугами"
+
+msgid "service_management.translating"
+msgstr "⏳ Перевод..."
+
+msgid "service_management.translation_result"
+msgstr ""
+"📋 Автоматический перевод:\n"
+"\n"
+"🇵🇱 Polski: {name_pl}\n"
+"🇷🇺 Русский: {name_ru}\n"
+"\n"
+"Это правильно?"
+
+msgid "settings.buffer_minutes"
+msgstr "Буферное время (в минутах):"
+
+msgid "settings.buffer_time"
+msgstr "⏰ Буферное время"
+
+msgid "settings.invalid_time"
+msgstr "❌ Неверный формат времени. Используйте ЧЧ:ММ."
+
+msgid "settings.settings_updated"
+msgstr "✅ Настройки обновлены!"
+
+msgid "settings.step_minutes"
+msgstr "Шаг времени (в минутах):"
+
+msgid "settings.time_step"
+msgstr "⏱️ Шаг времени"
+
+msgid "settings.title"
+msgstr "⚙️ Настройки сервиса"
+
+msgid "settings.work_end"
+msgstr "Конец работы (ЧЧ:ММ):"
+
+msgid "settings.work_hours"
+msgstr "🕐 Рабочие часы"
+
+msgid "settings.work_start"
+msgstr "Начало работы (ЧЧ:ММ):"
+
+msgid "start.language_selected"
+msgstr "✅ Язык установлен: Русский"
+
+msgid "start.select_language"
+msgstr "Wybierz język / Выберите язык"
+
+msgid "start.unauthorized"
+msgstr ""
+"❌ Вы не авторизованы для использования этого бота.\n"
+"\n"
+"Свяжитесь с администратором."
+
+msgid "start.welcome"
+msgstr "👋 Добро пожаловать в систему записи на автосервис!"
+
+msgid "user_management.add_mechanic"
+msgstr "➕ Добавить механика"
+
+msgid "user_management.add_user"
+msgstr "➕ Добавить пользователя"
+
+msgid "user_management.enter_telegram_id"
+msgstr "Введите Telegram ID пользователя:"
+
+msgid "user_management.invalid_id"
+msgstr "❌ Неверный Telegram ID."
+
+msgid "user_management.language"
+msgstr "Язык"
+
+msgid "user_management.language_not_set"
+msgstr "Не установлен"
+
+msgid "user_management.list_mechanics"
+msgstr "📋 Список всех механиков"
+
+msgid "user_management.list_users"
+msgstr "📋 Список всех пользователей"
+
+msgid "user_management.mechanic_added"
+msgstr "✅ Механик добавлен успешно!"
+
+msgid "user_management.mechanic_removed"
+msgstr "✅ Механик удален!"
+
+msgid "user_management.mechanics_list_title"
+msgstr "🔧 Список механиков"
+
+msgid "user_management.no_mechanics"
+msgstr "Нет механиков в системе."
+
+msgid "user_management.no_users"
+msgstr "Нет пользователей в системе."
+
+msgid "user_management.remove_mechanic"
+msgstr "➖ Удалить механика"
+
+msgid "user_management.remove_user"
+msgstr "➖ Удалить пользователя"
+
+msgid "user_management.select_action"
+msgstr "Выберите действие:"
+
+msgid "user_management.title"
+msgstr "👥 Управление пользователями"
+
+msgid "user_management.user_added"
+msgstr "✅ Пользователь добавлен успешно!"
+
+msgid "user_management.user_not_found"
+msgstr "❌ Пользователь не найден."
+
+msgid "user_management.user_removed"
+msgstr "✅ Пользователь удален!"
+
+msgid "user_management.users_list_title"
+msgstr "👥 Список пользователей"
+
+msgid "user_settings.change_language"
+msgstr "🌐 Изменить язык"
+
+msgid "user_settings.info"
+msgstr ""
+"📋 Информация о профиле:\n"
+"\n"
+"👤 Имя: {username}\n"
+"🆔 ID: {user_id}\n"
+"👔 Роль: {role}\n"
+"🌐 Язык: {language}"
+
+msgid "user_settings.language_changed"
+msgstr "✅ Язык изменен на: {language}"
+
+msgid "user_settings.language_not_set"
+msgstr "Не установлен"
+
+msgid "user_settings.reminders_1h"
+msgstr "За 1 час: {status}"
+
+msgid "user_settings.reminders_30m"
+msgstr "За 30 минут: {status}"
+
+msgid "user_settings.reminders_3h"
+msgstr "За 3 часа: {status}"
+
+msgid "user_settings.reminders_button"
+msgstr "⏰ Напоминания механика"
+
+msgid "user_settings.reminders_info"
+msgstr ""
+"Выберите, какие напоминания оставлять активными:\n"
+"\n"
+"• За 3 часа: {status_3h}\n"
+"• За 1 час: {status_1h}\n"
+"• За 30 минут: {status_30m}"
+
+msgid "user_settings.reminders_off"
+msgstr "Выключено"
+
+msgid "user_settings.reminders_on"
+msgstr "Включено"
+
+msgid "user_settings.role_admin"
+msgstr "Администратор"
+
+msgid "user_settings.role_mechanic"
+msgstr "Механик"
+
+msgid "user_settings.role_user"
+msgstr "Пользователь"
+
+msgid "user_settings.title"
+msgstr "👤 Мои настройки"
+

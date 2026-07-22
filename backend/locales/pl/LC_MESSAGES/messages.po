@@ -1,0 +1,631 @@
+# Polish translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-07-22 05:12+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pl\n"
+"Language-Team: pl <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "booking.actions.accept"
+msgstr "✅ Akceptuj"
+
+msgid "booking.actions.change_time"
+msgstr "⏰ Zmień termin"
+
+msgid "booking.actions.confirm_time"
+msgstr "✅ Potwierdź termin"
+
+msgid "booking.actions.propose_new_time"
+msgstr "🔄 Zaproponuj nowy termin"
+
+msgid "booking.actions.reject"
+msgstr "❌ Odrzuć"
+
+msgid "booking.confirm.details"
+msgstr ""
+"📋 Szczegóły rezerwacji:\n"
+"\n"
+"🚗 Pojazd: {brand} {model}\n"
+"📝 Nr rej: {number}\n"
+"👤 Klient: {client_name}\n"
+"📞 Telefon: {client_phone}\n"
+"🛠️ Usługa: {service}\n"
+"📅 Data: {date}\n"
+"🕐 Godzina: {time}\n"
+"\n"
+"💬 Opis:\n"
+"{description}"
+
+msgid "booking.confirm.error"
+msgstr "❌ Błąd podczas tworzenia rezerwacji."
+
+msgid "booking.confirm.success"
+msgstr ""
+"✅ Rezerwacja utworzona!\n"
+"\n"
+"Oczekuje na akceptację mechanika."
+
+msgid "booking.confirm.time_proposed"
+msgstr ""
+"✅ Nowy termin zaproponowany!\n"
+"\n"
+"Oczekuje na potwierdzenie użytkownika."
+
+msgid "booking.confirm.title"
+msgstr "✅ Potwierdź rezerwację"
+
+msgid "booking.create.booking_cancelled"
+msgstr "❌ Rezerwacja anulowana. Powrót do menu głównego."
+
+msgid "booking.create.enter_car_brand"
+msgstr "Wprowadź markę samochodu:"
+
+msgid "booking.create.enter_car_brand_model"
+msgstr "Wprowadź markę i model samochodu (np. Toyota Corolla lub Toyota, Corolla):"
+
+msgid "booking.create.enter_car_model"
+msgstr "Wprowadź model samochodu:"
+
+msgid "booking.create.enter_car_number"
+msgstr "Wprowadź numer rejestracyjny:"
+
+msgid "booking.create.enter_client_name"
+msgstr "Wprowadź imię klienta:"
+
+msgid "booking.create.enter_client_phone"
+msgstr "Wprowadź numer telefonu klienta (tylko cyfry):"
+
+msgid "booking.create.enter_description"
+msgstr "Wprowadź krótki opis problemu:"
+
+msgid "booking.create.no_available_dates"
+msgstr "Brak dostępnych dat dla wybranej usługi."
+
+msgid "booking.create.no_available_slots"
+msgstr "Brak dostępnych terminów na wybrany dzień."
+
+msgid "booking.create.no_description"
+msgstr "(Brak opisu)"
+
+msgid "booking.create.phone_invalid"
+msgstr "❌ Nieprawidłowy numer telefonu. Wprowadź tylko cyfry."
+
+msgid "booking.create.select_date"
+msgstr "Wybierz datę:"
+
+msgid "booking.create.select_service"
+msgstr "Wybierz usługę:"
+
+msgid "booking.create.select_time"
+msgstr "Wybierz godzinę:"
+
+msgid "booking.create.title"
+msgstr "➕ Nowa rezerwacja"
+
+msgid "booking.create.translating"
+msgstr "⏳ Tłumaczenie opisu..."
+
+msgid "booking.mechanic.my_bookings_title"
+msgstr "📅 Moje potwierdzone rezerwacje"
+
+msgid "booking.mechanic.select_day"
+msgstr "Wybierz dzień, aby zobaczyć rezerwacje:"
+
+msgid "booking.my_bookings.no_bookings"
+msgstr "Nie masz jeszcze żadnych rezerwacji."
+
+msgid "booking.my_bookings.title"
+msgstr "📅 Moje rezerwacje"
+
+msgid "booking.notification.accepted"
+msgstr ""
+"✅ Rezerwacja zaakceptowana!\n"
+"\n"
+"🔧 Mechanik: {mechanic_name}\n"
+"\n"
+"📋 Szczegóły:\n"
+"{details}"
+
+msgid "booking.notification.accepted_mechanic"
+msgstr "✅ Запись принята"
+
+msgid "booking.notification.new_booking"
+msgstr ""
+"🔔 Nowa rezerwacja!\n"
+"\n"
+"👤 Utworzona przez: {user_name}\n"
+"🚗 Pojazd: {brand} {model}\n"
+"📝 Nr rej: {number}\n"
+"👤 Klient: {client_name}\n"
+"📞 Telefon: {client_phone}\n"
+"🛠️ Usługa: {service}\n"
+"📅 Data: {date}\n"
+"🕐 Godzina: {time}\n"
+"\n"
+"💬 Opis:\n"
+"{description}"
+
+msgid "booking.notification.rejected"
+msgstr ""
+"❌ Rezerwacja odrzucona\n"
+"\n"
+"🔧 Mechanik: {mechanic_name}\n"
+"\n"
+"📋 Szczegóły:\n"
+"{details}"
+
+msgid "booking.notification.reminder"
+msgstr ""
+"⏰ Przypomnienie: rezerwacja {time_left}\n"
+"\n"
+"{details}"
+
+msgid "booking.notification.time_change"
+msgstr ""
+"⏰ Propozycja zmiany terminu\n"
+"\n"
+"🔧 Mechanik: {mechanic_name}\n"
+"📅 Nowy termin: {date} {time}\n"
+"\n"
+"📋 Szczegóły:\n"
+"{details}"
+
+msgid "booking.notification.time_confirmed"
+msgstr ""
+"✅ Klient potwierdził proponowany termin!\n"
+"\n"
+"👤 Klient: {user_name}\n"
+"📅 Potwierdzony termin: {date} {time}\n"
+"\n"
+"📋 Szczegóły:\n"
+"{details}"
+
+msgid "booking.pending.no_bookings"
+msgstr "Brak oczekujących rezerwacji."
+
+msgid "booking.pending.title"
+msgstr "⏳ Oczekujące rezerwacje"
+
+msgid "booking.reminder.time_left_1h"
+msgstr "za 1 godzinę"
+
+msgid "booking.reminder.time_left_30m"
+msgstr "za 30 minut"
+
+msgid "booking.reminder.time_left_3h"
+msgstr "za 3 godziny"
+
+msgid "calendar.day_overview"
+msgstr "📅 Rezerwacje na {date}:"
+
+msgid "calendar.entry"
+msgstr ""
+"🕐 {time} • ⏱️ {duration} min\n"
+"🛠️ {service}\n"
+"🚗 {brand} {model} • 📝 {number}\n"
+"👤 {client} • ☎️ {phone}\n"
+"🔧 {mechanic}\n"
+"⚙️ {status}"
+
+msgid "calendar.no_available_days"
+msgstr "Brak rezerwacji w nadchodzących dniach."
+
+msgid "calendar.no_bookings"
+msgstr "Brak rezerwacji na {date}."
+
+msgid "calendar.select_day"
+msgstr "Wybierz dzień, aby zobaczyć rezerwacje:"
+
+msgid "calendar.status.accepted"
+msgstr "Potwierdzona"
+
+msgid "calendar.status.cancelled"
+msgstr "Anulowana"
+
+msgid "calendar.status.completed"
+msgstr "Zakończona"
+
+msgid "calendar.status.negotiating"
+msgstr "Negocjowana"
+
+msgid "calendar.status.pending"
+msgstr "Oczekuje"
+
+msgid "calendar.status.rejected"
+msgstr "Odrzucona"
+
+msgid "calendar.title"
+msgstr "📆 Kalendarz rezerwacji"
+
+msgid "calendar.today"
+msgstr "📅 Dziś"
+
+msgid "calendar.tomorrow"
+msgstr "📆 Jutro"
+
+msgid "calendar.unassigned"
+msgstr "brak mechanika"
+
+msgid "common.back"
+msgstr "Wstecz"
+
+msgid "common.cancel"
+msgstr "Anuluj"
+
+msgid "common.close"
+msgstr "Zamknij"
+
+msgid "common.confirm"
+msgstr "Potwierdź"
+
+msgid "common.delete"
+msgstr "Usuń"
+
+msgid "common.edit"
+msgstr "Edytuj"
+
+msgid "common.error"
+msgstr "Błąd"
+
+msgid "common.loading"
+msgstr "Ładowanie..."
+
+msgid "common.name"
+msgstr "Nazwa"
+
+msgid "common.no"
+msgstr "Nie"
+
+msgid "common.save"
+msgstr "Zapisz"
+
+msgid "common.skip"
+msgstr "⏭️ Pomiń"
+
+msgid "common.success"
+msgstr "Sukces"
+
+msgid "common.yes"
+msgstr "Tak"
+
+msgid "errors.bad_request"
+msgstr "❌ Nieprawidłowe żądanie. Spróbuj ponownie."
+
+msgid "errors.booking_not_found"
+msgstr "❌ Rezerwacja nie znaleziona."
+
+msgid "errors.chat_migrated"
+msgstr "⚠️ Grupa została przeniesiona do supergrupy."
+
+msgid "errors.database"
+msgstr "❌ Błąd bazy danych."
+
+msgid "errors.database_error"
+msgstr "❌ Wystąpił błąd bazy danych. Spróbuj ponownie później."
+
+msgid "errors.invalid_input"
+msgstr "❌ Nieprawidłowe dane wejściowe."
+
+msgid "errors.network_error"
+msgstr "❌ Wystąpił błąd sieci. Spróbuj ponownie później."
+
+msgid "errors.not_found"
+msgstr "❌ Nie znaleziono żądanego elementu."
+
+msgid "errors.permission_denied"
+msgstr "❌ Brak uprawnień."
+
+msgid "errors.rate_limit"
+msgstr "⏳ Zbyt wiele żądań. Poczekaj chwilę i spróbuj ponownie."
+
+msgid "errors.server_error"
+msgstr "❌ Wystąpił błąd serwera Telegram. Spróbuj ponownie później."
+
+msgid "errors.service_not_found"
+msgstr "❌ Usługa nie znaleziona."
+
+msgid "errors.telegram_error"
+msgstr "❌ Wystąpił błąd podczas komunikacji z Telegram. Spróbuj ponownie."
+
+msgid "errors.time_slot_taken"
+msgstr "❌ Ten termin jest już zajęty."
+
+msgid "errors.unknown"
+msgstr "❌ Wystąpił nieznany błąd."
+
+msgid "menu.admin.calendar"
+msgstr "📆 Kalendarz rezerwacji"
+
+msgid "menu.admin.manage_mechanics"
+msgstr "🔧 Zarządzaj mechanikami"
+
+msgid "menu.admin.manage_services"
+msgstr "🛠️ Zarządzaj usługami"
+
+msgid "menu.admin.manage_settings"
+msgstr "⚙️ Ustawienia serwisu"
+
+msgid "menu.admin.manage_users"
+msgstr "👥 Zarządzaj użytkownikami"
+
+msgid "menu.admin.statistics"
+msgstr "📊 Statystyki"
+
+msgid "menu.admin.title"
+msgstr "👨‍💼 Panel administratora"
+
+msgid "menu.main.help"
+msgstr "❓ Pomoc"
+
+msgid "menu.main.my_bookings"
+msgstr "📅 Moje rezerwacje"
+
+msgid "menu.main.new_booking"
+msgstr "➕ Nowa rezerwacja"
+
+msgid "menu.main.settings"
+msgstr "⚙️ Ustawienia"
+
+msgid "menu.main.title"
+msgstr "📋 Menu główne"
+
+msgid "menu.main.user_settings"
+msgstr "⚙️ Moje ustawienia"
+
+msgid "menu.mechanic.add_service"
+msgstr "➕ Dodaj usługę"
+
+msgid "menu.mechanic.calendar"
+msgstr "📆 Kalendarz rezerwacji"
+
+msgid "menu.mechanic.manage_services"
+msgstr "🛠️ Zarządzaj usługami"
+
+msgid "menu.mechanic.my_bookings"
+msgstr "📅 Moje rezerwacje"
+
+msgid "menu.mechanic.pending_bookings"
+msgstr "⏳ Oczekujące rezerwacje"
+
+msgid "menu.mechanic.title"
+msgstr "🔧 Panel mechanika"
+
+msgid "service_management.add_service"
+msgstr "➕ Dodaj usługę"
+
+msgid "service_management.confirm_translation"
+msgstr "✅ Potwierdź"
+
+msgid "service_management.delete_service"
+msgstr "🗑️ Usuń usługę"
+
+msgid "service_management.duration"
+msgstr "Czas trwania"
+
+msgid "service_management.edit_service"
+msgstr "✏️ Edytuj usługę"
+
+msgid "service_management.edit_translation"
+msgstr "✏️ Edytuj ręcznie"
+
+msgid "service_management.enter_duration"
+msgstr "Wprowadź czas trwania (w minutach):"
+
+msgid "service_management.enter_name"
+msgstr "Wprowadź nazwę usługi (w swoim języku):"
+
+msgid "service_management.enter_name_pl"
+msgstr "Wprowadź nazwę usługi (polski):"
+
+msgid "service_management.enter_name_ru"
+msgstr "Wprowadź nazwę usługi (rosyjski):"
+
+msgid "service_management.enter_price"
+msgstr "Wprowadź cenę:"
+
+msgid "service_management.list_services"
+msgstr "📋 Lista usług"
+
+msgid "service_management.no_services"
+msgstr "Brak usług w systemie."
+
+msgid "service_management.service_added"
+msgstr "✅ Usługa dodana!"
+
+msgid "service_management.service_deleted"
+msgstr "✅ Usługa usunięta!"
+
+msgid "service_management.service_updated"
+msgstr "✅ Usługa zaktualizowana!"
+
+msgid "service_management.title"
+msgstr "🛠️ Zarządzanie usługami"
+
+msgid "service_management.translating"
+msgstr "⏳ Tłumaczenie..."
+
+msgid "service_management.translation_result"
+msgstr ""
+"📋 Automatyczne tłumaczenie:\n"
+"\n"
+"🇵🇱 Polski: {name_pl}\n"
+"🇷🇺 Русский: {name_ru}\n"
+"\n"
+"Czy to jest prawidłowe?"
+
+msgid "settings.buffer_minutes"
+msgstr "Czas buforowy (w minutach):"
+
+msgid "settings.buffer_time"
+msgstr "⏰ Czas buforowy"
+
+msgid "settings.invalid_time"
+msgstr "❌ Nieprawidłowy format czasu. Użyj HH:MM."
+
+msgid "settings.settings_updated"
+msgstr "✅ Ustawienia zaktualizowane!"
+
+msgid "settings.step_minutes"
+msgstr "Krok czasowy (w minutach):"
+
+msgid "settings.time_step"
+msgstr "⏱️ Krok czasowy"
+
+msgid "settings.title"
+msgstr "⚙️ Ustawienia serwisu"
+
+msgid "settings.work_end"
+msgstr "Koniec pracy (HH:MM):"
+
+msgid "settings.work_hours"
+msgstr "🕐 Godziny pracy"
+
+msgid "settings.work_start"
+msgstr "Początek pracy (HH:MM):"
+
+msgid "start.language_selected"
+msgstr "✅ Język ustawiony: Polski"
+
+msgid "start.select_language"
+msgstr "Wybierz język / Выберите язык"
+
+msgid "start.unauthorized"
+msgstr ""
+"❌ Nie jesteś autoryzowany do korzystania z tego bota.\n"
+"\n"
+"Skontaktuj się z administratorem."
+
+msgid "start.welcome"
+msgstr "👋 Witamy w systemie rezerwacji serwisu samochodowego!"
+
+msgid "user_management.add_mechanic"
+msgstr "➕ Dodaj mechanika"
+
+msgid "user_management.add_user"
+msgstr "➕ Dodaj użytkownika"
+
+msgid "user_management.enter_telegram_id"
+msgstr "Wprowadź Telegram ID użytkownika:"
+
+msgid "user_management.invalid_id"
+msgstr "❌ Nieprawidłowe ID Telegram."
+
+msgid "user_management.language"
+msgstr "Język"
+
+msgid "user_management.language_not_set"
+msgstr "Nie ustawiono"
+
+msgid "user_management.list_mechanics"
+msgstr "📋 Lista wszystkich mechaników"
+
+msgid "user_management.list_users"
+msgstr "📋 Lista wszystkich użytkowników"
+
+msgid "user_management.mechanic_added"
+msgstr "✅ Mechanik dodany pomyślnie!"
+
+msgid "user_management.mechanic_removed"
+msgstr "✅ Mechanik usunięty!"
+
+msgid "user_management.mechanics_list_title"
+msgstr "🔧 Lista mechaników"
+
+msgid "user_management.no_mechanics"
+msgstr "Brak mechaników w systemie."
+
+msgid "user_management.no_users"
+msgstr "Brak użytkowników w systemie."
+
+msgid "user_management.remove_mechanic"
+msgstr "➖ Usuń mechanika"
+
+msgid "user_management.remove_user"
+msgstr "➖ Usuń użytkownika"
+
+msgid "user_management.select_action"
+msgstr "Wybierz akcję:"
+
+msgid "user_management.title"
+msgstr "👥 Zarządzanie użytkownikami"
+
+msgid "user_management.user_added"
+msgstr "✅ Użytkownik dodany pomyślnie!"
+
+msgid "user_management.user_not_found"
+msgstr "❌ Użytkownik nie znaleziony."
+
+msgid "user_management.user_removed"
+msgstr "✅ Użytkownik usunięty!"
+
+msgid "user_management.users_list_title"
+msgstr "👥 Lista użytkowników"
+
+msgid "user_settings.change_language"
+msgstr "🌐 Zmień język"
+
+msgid "user_settings.info"
+msgstr ""
+"📋 Informacje o profilu:\n"
+"\n"
+"👤 Nazwa: {username}\n"
+"🆔 ID: {user_id}\n"
+"👔 Rola: {role}\n"
+"🌐 Język: {language}"
+
+msgid "user_settings.language_changed"
+msgstr "✅ Język zmieniony na: {language}"
+
+msgid "user_settings.language_not_set"
+msgstr "Nie ustawiono"
+
+msgid "user_settings.reminders_1h"
+msgstr "1 godzina przed: {status}"
+
+msgid "user_settings.reminders_30m"
+msgstr "30 minut przed: {status}"
+
+msgid "user_settings.reminders_3h"
+msgstr "3 godziny przed: {status}"
+
+msgid "user_settings.reminders_button"
+msgstr "⏰ Przypomnienia mechanika"
+
+msgid "user_settings.reminders_info"
+msgstr ""
+"Wybierz, które przypomnienia mają być aktywne:\n"
+"\n"
+"• 3h przed: {status_3h}\n"
+"• 1h przed: {status_1h}\n"
+"• 30 min przed: {status_30m}"
+
+msgid "user_settings.reminders_off"
+msgstr "Wyłączone"
+
+msgid "user_settings.reminders_on"
+msgstr "Włączone"
+
+msgid "user_settings.role_admin"
+msgstr "Administrator"
+
+msgid "user_settings.role_mechanic"
+msgstr "Mechanik"
+
+msgid "user_settings.role_user"
+msgstr "Użytkownik"
+
+msgid "user_settings.title"
+msgstr "👤 Moje ustawienia"
+
