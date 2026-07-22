@@ -15,7 +15,6 @@ from app.bot.keyboards.inline import (
 )
 from app.bot.states.booking import UserManagementStates
 from app.models.user import User, UserRole
-from app.repositories.user import UserRepository
 from app.services.auth_service import AuthService
 
 router = Router(name="admin-mechanics")
@@ -133,8 +132,8 @@ async def list_mechanics(
     _: Callable[[str], str],
 ):
     """Show list of all mechanics."""
-    user_repo = UserRepository(session)
-    mechanics = await user_repo.get_all_mechanics()
+    auth_service = AuthService(session)
+    mechanics = await auth_service.get_all_mechanics()
     
     if not mechanics:
         await send_clean_menu(

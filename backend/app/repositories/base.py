@@ -1,8 +1,9 @@
 """Base repository with common CRUD operations"""
 
 from typing import Generic, TypeVar, Type, Optional, List, Any
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 
 from app.models.base import Base
 
@@ -22,7 +23,23 @@ class BaseRepository(Generic[ModelType]):
         """
         self.model = model
         self.session = session
-    
+
+    def _apply_filters(self, query: Select, filters: dict[str, Any]) -> Select:
+        """
+        Apply equality filters (from get_all/count keyword args) to a query
+
+        Args:
+            query: SQLAlchemy select() statement to filter
+            filters: Mapping of model attribute name -> value
+
+        Returns:
+            Query with WHERE clauses applied for known model attributes
+        """
+        for key, value in filters.items():
+            if hasattr(self.model, key):
+                query = query.where(getattr(self.model, key) == value)
+        return query
+
     async def get_by_id(self, id: int) -> Optional[ModelType]:
         """
         Get entity by ID
@@ -55,13 +72,7 @@ class BaseRepository(Generic[ModelType]):
         Returns:
             List of entities
         """
-        query = select(self.model)
-        
-        # Apply filters
-        for key, value in filters.items():
-            if hasattr(self.model, key):
-                query = query.where(getattr(self.model, key) == value)
-        
+        query = self._apply_filters(select(self.model), filters)
         query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
@@ -121,20 +132,16 @@ class BaseRepository(Generic[ModelType]):
     async def count(self, **filters) -> int:
         """
         Count entities with optional filters
-        
+
         Args:
             **filters: Filters as keyword arguments
-            
+
         Returns:
             Number of entities
         """
-        query = select(self.model)
-        
-        # Apply filters
-        for key, value in filters.items():
-            if hasattr(self.model, key):
-                query = query.where(getattr(self.model, key) == value)
-        
+        query = self._apply_filters(
+            select(func.count()).select_from(self.model), filters
+        )
         result = await self.session.execute(query)
-        return len(list(result.scalars().all()))
+        return result.scalar_one()
 

@@ -16,7 +16,6 @@ from app.bot.keyboards.inline import (
 )
 from app.bot.states.booking import AddServiceStates
 from app.models.user import User
-from app.utils.user_utils import get_user_language
 from app.services.service_management_service import ServiceManagementService
 
 router = Router(name="admin-services")
@@ -42,6 +41,7 @@ async def list_services(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
+    language: str,
 ):
     """Show list of services."""
     service_mgmt = ServiceManagementService(session)
@@ -56,9 +56,6 @@ async def list_services(
         await callback.answer()
         return
 
-    # Get language with fallback
-    language = get_user_language(user)
-    
     text = _("service_management.title") + "\n\n"
     for service in services:
         text += f"• {service.get_name(language)} ({service.duration_minutes} min)\n"
@@ -77,6 +74,7 @@ async def add_service_start(
     user: User,
     _: Callable[[str], str],
     state: FSMContext,
+    language: str,
 ):
     """Start adding new service."""
     await send_clean_menu(
@@ -84,8 +82,6 @@ async def add_service_start(
         text=_("service_management.enter_name"),
         reply_markup=get_cancel_keyboard(_),
     )
-    # Get language with fallback
-    language = get_user_language(user)
     await state.update_data(source_language=language)
     await state.set_state(AddServiceStates.entering_name_pl)
     await callback.answer()
@@ -261,6 +257,7 @@ async def edit_service(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
+    language: str,
 ):
     """Show service edit options."""
     if not callback.data:
@@ -276,9 +273,6 @@ async def edit_service(
         await callback.answer(_("errors.service_not_found"), show_alert=True)
         return
 
-    # Get language with fallback
-    language = get_user_language(user)
-    
     text = f"""
 {_("service_management.title")}
 

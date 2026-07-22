@@ -4,10 +4,9 @@ import pytest
 import asyncio
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import StaticPool
 
 from app.models.base import Base
-from app.core.service_factory import ServiceFactory
 
 
 # Test database URL (in-memory SQLite)
@@ -28,7 +27,8 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=False,
-        poolclass=NullPool
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
     )
     
     # Create all tables
@@ -44,12 +44,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     # Cleanup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    
+
     await engine.dispose()
-
-
-@pytest.fixture
-async def service_factory(db_session: AsyncSession):
-    """Create a service factory for tests"""
-    return ServiceFactory(db_session)
 

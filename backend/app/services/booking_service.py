@@ -1,7 +1,7 @@
 """Booking Service - Business logic for bookings"""
 
 from typing import List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking, BookingStatus
@@ -179,7 +179,19 @@ class BookingService:
             return []
         
         return await self.booking_repo.get_by_mechanic(user.id)
-    
+
+    async def get_bookings_by_date(self, target_date: date) -> List[Booking]:
+        """
+        Get all active bookings for a specific date (in local timezone)
+
+        Args:
+            target_date: Target date (in local timezone)
+
+        Returns:
+            List of bookings
+        """
+        return await self.booking_repo.get_by_date(target_date)
+
     async def accept_booking(
         self,
         booking_id: int,

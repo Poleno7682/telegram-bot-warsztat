@@ -8,13 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.booking_service import BookingService
-from app.services.notification_service import NotificationService
+from app.services.booking_workflow_service import BookingWorkflowService
 from app.services.time_service import TimeService
-from app.utils.user_utils import get_user_language
 from app.utils.date_formatter import DateFormatter
 from app.utils.booking_utils import filter_future_bookings, group_bookings_by_date, format_booking_details
 from app.bot.keyboards.inline import get_dates_keyboard, get_booking_actions_keyboard, get_times_keyboard
-from app.bot.handlers.common import safe_callback_answer, schedule_main_menu_return
+from app.bot.handlers.common import safe_callback_answer, schedule_main_menu_return, edit_or_ignore
 from app.bot.states.booking import BookingStates
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
@@ -35,17 +34,15 @@ async def accept_booking(
         return
     
     booking_id = int(callback.data.split(":")[2])
-    
-    # Accept booking
-    booking_service = BookingService(session)
-    booking, msg = await booking_service.accept_booking(booking_id, user.telegram_id)
-    
+
+    # Accept booking and notify creator/other mechanics in one step
+    workflow = BookingWorkflowService(session, callback.bot)
+    booking, msg = await workflow.accept_and_notify(
+        booking_id=booking_id, mechanic_telegram_id=user.telegram_id
+    )
+
     if booking:
-        # Notify using NotificationService (includes main menu in confirmation message)
         if callback.bot and isinstance(callback.message, TelegramMessage):
-            notification_service = NotificationService(session, callback.bot)
-            await notification_service.notify_booking_accepted(booking, user)
-            
             # Update mechanic's message if it has text
             if callback.message.text:
                 await callback.message.edit_text(
@@ -70,17 +67,15 @@ async def reject_booking(
         return
     
     booking_id = int(callback.data.split(":")[2])
-    
-    # Reject booking
-    booking_service = BookingService(session)
-    booking, msg = await booking_service.reject_booking(booking_id, user.telegram_id)
-    
+
+    # Reject booking and notify creator/other mechanics in one step
+    workflow = BookingWorkflowService(session, callback.bot)
+    booking, msg = await workflow.reject_and_notify(
+        booking_id=booking_id, mechanic_telegram_id=user.telegram_id
+    )
+
     if booking:
-        # Notify using NotificationService
         if callback.bot and isinstance(callback.message, TelegramMessage) and callback.message.text:
-            notification_service = NotificationService(session, callback.bot)
-            await notification_service.notify_booking_rejected(booking, user)
-            
             # Update mechanic's message
             await callback.message.edit_text(
                 callback.message.text + f"\n\n❌ {_('booking.actions.reject')}"
@@ -101,7 +96,8 @@ async def change_booking_time(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Handle time change request by mechanic"""
     if not callback.data:
@@ -109,15 +105,13 @@ async def change_booking_time(
         return
     
     booking_id = int(callback.data.split(":")[2])
-    
+
     # Get booking to get service duration (with relations loaded)
-    from app.repositories.booking import BookingRepository
-    booking_repo = BookingRepository(session)
-    booking = await booking_repo.get_with_relations(booking_id)
-    
+    booking_service = BookingService(session)
+    booking = await booking_service.get_booking_details(booking_id)
+
     if not booking or not booking.service:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.unknown"))
+        await edit_or_ignore(callback, _("errors.unknown"))
         await safe_callback_answer(callback)
         return
     
@@ -133,20 +127,16 @@ async def change_booking_time(
     
     # Check if there are any available dates
     if not dates:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("booking.create.no_available_dates"))
+        await edit_or_ignore(callback, _("booking.create.no_available_dates"))
         await safe_callback_answer(callback)
         return
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Show dates selection
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.select_date"),
-            reply_markup=get_dates_keyboard(dates, language)
-        )
+    await edit_or_ignore(
+        callback,
+        _("booking.create.select_date"),
+        reply_markup=get_dates_keyboard(dates, language)
+    )
     
     # Set FSM state to handle date selection
     await state.set_state(BookingStates.selecting_date)
@@ -158,43 +148,40 @@ async def show_pending_bookings(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Show pending bookings for mechanic"""
-    from app.repositories.booking import BookingRepository
-    from app.models.booking import BookingStatus
-    
-    booking_repo = BookingRepository(session)
-    bookings = await booking_repo.get_by_status(BookingStatus.PENDING)
-    
+    booking_service = BookingService(session)
+    bookings = await booking_service.get_pending_bookings()
+
     if not bookings:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(
-                _("booking.pending.no_bookings"),
-                reply_markup=cast(InlineKeyboardMarkup, InlineKeyboardBuilder().row(
-                    InlineKeyboardButton(
-                        text=_("common.back"),
-                        callback_data="menu:main"
-                    )
-                ).as_markup())
+        back_keyboard = InlineKeyboardBuilder()
+        back_keyboard.row(
+            InlineKeyboardButton(
+                text=_("common.back"),
+                callback_data="menu:main"
             )
+        )
+        await edit_or_ignore(
+            callback,
+            _("booking.pending.no_bookings"),
+            reply_markup=cast(InlineKeyboardMarkup, back_keyboard.as_markup())
+        )
         await safe_callback_answer(callback)
         return
     
     # Show first booking
     booking = bookings[0]
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     text = _("booking.pending.title") + f" (1/{len(bookings)})\n\n"
     text += format_booking_details(booking, language, _)
     
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            text,
-            reply_markup=get_booking_actions_keyboard(booking.id, _)
-        )
+    await edit_or_ignore(
+        callback,
+        text,
+        reply_markup=get_booking_actions_keyboard(booking.id, _)
+    )
     await safe_callback_answer(callback)
 
 
@@ -203,16 +190,16 @@ async def show_mechanic_bookings(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Show mechanic's confirmed bookings - day selection"""
-    from app.repositories.booking import BookingRepository
     from app.models.booking import BookingStatus
     from datetime import date, timedelta
-    
-    booking_repo = BookingRepository(session)
-    bookings = await booking_repo.get_by_mechanic(user.id)
-    
+
+    booking_service = BookingService(session)
+    bookings = await booking_service.get_mechanic_bookings(user.telegram_id)
+
     # Filter only confirmed bookings
     confirmed_bookings = [b for b in bookings if b.status == BookingStatus.ACCEPTED]
     
@@ -220,16 +207,18 @@ async def show_mechanic_bookings(
     future_bookings = filter_future_bookings(confirmed_bookings)
     
     if not future_bookings:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(
-                _("booking.my_bookings.no_bookings"),
-                reply_markup=cast(InlineKeyboardMarkup, InlineKeyboardBuilder().row(
-                    InlineKeyboardButton(
-                        text=_("common.back"),
-                        callback_data="menu:main"
-                    )
-                ).as_markup())
+        back_keyboard = InlineKeyboardBuilder()
+        back_keyboard.row(
+            InlineKeyboardButton(
+                text=_("common.back"),
+                callback_data="menu:main"
             )
+        )
+        await edit_or_ignore(
+            callback,
+            _("booking.my_bookings.no_bookings"),
+            reply_markup=cast(InlineKeyboardMarkup, back_keyboard.as_markup())
+        )
         await safe_callback_answer(callback)
         return
     
@@ -238,10 +227,7 @@ async def show_mechanic_bookings(
     
     # Sort dates
     sorted_dates = sorted(bookings_by_date.keys())
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Create keyboard with dates
     builder = InlineKeyboardBuilder()
     today = date.today()
@@ -275,11 +261,11 @@ async def show_mechanic_bookings(
     
     text = _("booking.mechanic.my_bookings_title") + "\n\n" + _("booking.mechanic.select_day")
     
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            text,
-            reply_markup=builder.as_markup()
-        )
+    await edit_or_ignore(
+        callback,
+        text,
+        reply_markup=builder.as_markup()
+    )
     await safe_callback_answer(callback)
 
 
@@ -288,23 +274,23 @@ async def show_mechanic_bookings_day(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Show mechanic's confirmed bookings for selected day"""
-    from app.repositories.booking import BookingRepository
     from app.models.booking import BookingStatus
-    
+
     if not callback.data:
         await safe_callback_answer(callback)
         return
-    
+
     # Parse date from callback
     date_str = callback.data.split(":")[2]
     target_date = datetime.fromisoformat(date_str).date()
-    
-    booking_repo = BookingRepository(session)
-    bookings = await booking_repo.get_by_mechanic(user.id)
-    
+
+    booking_service = BookingService(session)
+    bookings = await booking_service.get_mechanic_bookings(user.telegram_id)
+
     # Filter only confirmed bookings
     confirmed_bookings = [b for b in bookings if b.status == BookingStatus.ACCEPTED]
     
@@ -322,10 +308,7 @@ async def show_mechanic_bookings_day(
         # Only include bookings for selected date
         if booking_date == target_date:
             day_bookings.append(booking)
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Format date header
     date_header = DateFormatter.format_date(target_date, language)
     text = f"📅 {date_header}\n\n"
@@ -352,10 +335,10 @@ async def show_mechanic_bookings_day(
         )
     )
     
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            text,
-            reply_markup=builder.as_markup()
-        )
+    await edit_or_ignore(
+        callback,
+        text,
+        reply_markup=builder.as_markup()
+    )
     await safe_callback_answer(callback)
 

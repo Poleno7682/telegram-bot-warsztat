@@ -288,35 +288,4 @@ class TimeService:
                 return True
         
         return False
-    
-    @staticmethod
-    def format_date(target_datetime: datetime | date, language: str = "pl") -> str:
-        """
-        Format date with day of week from local timezone datetime or date
-        
-        Args:
-            target_datetime: Local timezone datetime or date to format
-            language: Language code
-            
-        Returns:
-            Formatted date string in local timezone
-        """
-        # Use DateFormatter for consistency
-        from app.utils.date_formatter import DateFormatter
-        return DateFormatter.format_date(target_datetime, language)
-    
-    @staticmethod
-    def format_time(target_time: datetime) -> str:
-        """
-        Format time from local timezone datetime
-        
-        Args:
-            target_time: Local timezone datetime to format
-            
-        Returns:
-            Formatted time string (HH:MM) in local timezone
-        """
-        # Use DateFormatter for consistency
-        from app.utils.date_formatter import DateFormatter
-        return DateFormatter.format_time(target_time)
 

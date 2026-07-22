@@ -11,9 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu, safe_callback_answer
 from app.bot.keyboards.inline import get_cancel_keyboard, get_user_management_keyboard
 from app.bot.states.booking import UserManagementStates
-from app.core.service_factory import ServiceFactory
 from app.models.user import User, UserRole
-from app.repositories.user import UserRepository
+from app.services.auth_service import AuthService
 
 router = Router(name="admin-users")
 
@@ -64,9 +63,7 @@ async def add_user_process(
         await message.answer(_("user_management.invalid_id"))
         return
 
-    # Get service factory from data (injected by middleware)
-    service_factory = ServiceFactory(session, message.bot) if message.bot else ServiceFactory(session)
-    auth_service = service_factory.get_auth_service()
+    auth_service = AuthService(session)
     created_user = await auth_service.add_user_role(telegram_id, UserRole.USER)
 
     if created_user:
@@ -113,8 +110,7 @@ async def remove_user_process(
         await message.answer(_("user_management.invalid_id"))
         return
 
-    service_factory = ServiceFactory(session, message.bot) if message.bot else ServiceFactory(session)
-    auth_service = service_factory.get_auth_service()
+    auth_service = AuthService(session)
     success = await auth_service.remove_user_role(telegram_id)
 
     if success:
@@ -133,8 +129,8 @@ async def list_users(
     _: Callable[[str], str],
 ):
     """Show list of all users."""
-    user_repo = UserRepository(session)
-    users = await user_repo.get_all_users()
+    auth_service = AuthService(session)
+    users = await auth_service.get_all_users()
     
     if not users:
         await send_clean_menu(

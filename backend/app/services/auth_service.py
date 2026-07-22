@@ -1,6 +1,6 @@
 """Authentication and Authorization Service"""
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole, LANGUAGE_UNSET
@@ -266,4 +266,52 @@ class AuthService:
         if success:
             await self.session.commit()
         return success
+
+    async def get_all_mechanics(self) -> List[User]:
+        """
+        Get all active mechanics
+
+        Returns:
+            List of mechanics
+        """
+        return await self.user_repo.get_all_mechanics()
+
+    async def get_all_users(self) -> List[User]:
+        """
+        Get all active users (with USER role)
+
+        Returns:
+            List of users
+        """
+        return await self.user_repo.get_all_users()
+
+    async def update_reminder_settings(
+        self,
+        telegram_id: int,
+        *,
+        reminder_3h_enabled: Optional[bool] = None,
+        reminder_1h_enabled: Optional[bool] = None,
+        reminder_30m_enabled: Optional[bool] = None,
+    ) -> Optional[User]:
+        """
+        Update a user's reminder preferences
+
+        Args:
+            telegram_id: Telegram user ID
+            reminder_3h_enabled: New value for the 3h reminder toggle
+            reminder_1h_enabled: New value for the 1h reminder toggle
+            reminder_30m_enabled: New value for the 30m reminder toggle
+
+        Returns:
+            Updated user or None if not found
+        """
+        user = await self.user_repo.update_reminder_settings(
+            telegram_id,
+            reminder_3h_enabled=reminder_3h_enabled,
+            reminder_1h_enabled=reminder_1h_enabled,
+            reminder_30m_enabled=reminder_30m_enabled,
+        )
+        if user:
+            await self.session.commit()
+        return user
 

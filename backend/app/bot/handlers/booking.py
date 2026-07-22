@@ -1,20 +1,20 @@
 """Booking handlers - creating and managing bookings"""
 
-from typing import Callable, cast
-from aiogram import Router, F
+from typing import Any, Awaitable, Callable, cast
+from aiogram import Bot, Router, F
 from aiogram.types import Message as TelegramMessage, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from app.models.user import User, LANGUAGE_UNSET
+from app.models.user import User, UserRole, LANGUAGE_UNSET
+from app.core.timezone_utils import ensure_local
 from app.services.booking_service import BookingService
+from app.services.booking_workflow_service import BookingWorkflowService
 from app.services.time_service import TimeService
 from app.services.service_management_service import ServiceManagementService
-from app.services.notification_service import NotificationService
 from app.bot.states.booking import BookingStates
-from app.utils.user_utils import get_user_language
 from app.utils.date_formatter import DateFormatter
 from app.utils.validators import validate_phone
 from app.utils.callback_utils import parse_callback_data
@@ -26,7 +26,7 @@ from app.bot.keyboards.inline import (
     get_cancel_keyboard,
     get_skip_keyboard
 )
-from app.bot.handlers.common import safe_callback_answer, _build_menu_payload
+from app.bot.handlers.common import safe_callback_answer, schedule_main_menu_return, _build_menu_payload, edit_or_ignore
 
 router = Router(name="booking")
 
@@ -37,15 +37,16 @@ async def start_new_booking(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Start new booking flow"""
     from app.bot.handlers.common import send_clean_menu
-    
+
     # Get all active services
     service_mgmt = ServiceManagementService(session)
     services = await service_mgmt.get_all_active_services()
-    
+
     if not services:
         await send_clean_menu(
             callback=callback,
@@ -54,10 +55,7 @@ async def start_new_booking(
         )
         await safe_callback_answer(callback)
         return
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Show services with clean menu
     await send_clean_menu(
         callback=callback,
@@ -74,7 +72,8 @@ async def service_selected(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Handle service selection"""
     service_id = parse_callback_data(callback.data, "service:", index=1)
@@ -87,8 +86,7 @@ async def service_selected(
     service = await service_mgmt.get_service_by_id(service_id)
     
     if not service:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.service_not_found"))
+        await edit_or_ignore(callback, _("errors.service_not_found"))
         await state.clear()
         await safe_callback_answer(callback)
         return
@@ -102,20 +100,16 @@ async def service_selected(
     
     # Check if there are any available dates
     if not dates:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("booking.create.no_available_dates"))
+        await edit_or_ignore(callback, _("booking.create.no_available_dates"))
         await safe_callback_answer(callback)
         return
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Show dates
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.select_date"),
-            reply_markup=get_dates_keyboard(dates, language)
-        )
+    await edit_or_ignore(
+        callback,
+        _("booking.create.select_date"),
+        reply_markup=get_dates_keyboard(dates, language)
+    )
     await state.set_state(BookingStates.selecting_date)
     await safe_callback_answer(callback)
 
@@ -126,7 +120,8 @@ async def date_selected(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Handle date selection"""
     if not callback.data:
@@ -144,8 +139,7 @@ async def date_selected(
     service_id = data.get("service_id")
     
     if not service_id or not isinstance(service_id, int):
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.unknown"))
+        await edit_or_ignore(callback, _("errors.unknown"))
         await state.clear()
         await safe_callback_answer(callback)
         return
@@ -155,8 +149,7 @@ async def date_selected(
     service = await service_mgmt.get_service_by_id(service_id)
     
     if not service:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.service_not_found"))
+        await edit_or_ignore(callback, _("errors.service_not_found"))
         await state.clear()
         await safe_callback_answer(callback)
         return
@@ -169,24 +162,77 @@ async def date_selected(
     )
     
     if not available_times:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("booking.create.no_available_slots"))
+        await edit_or_ignore(callback, _("booking.create.no_available_slots"))
         await safe_callback_answer(callback)
         return
     
     # Save date
     await state.update_data(booking_date=date_str)
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Show times
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.select_time"),
-            reply_markup=get_times_keyboard(available_times, language, _)
-        )
+    await edit_or_ignore(
+        callback,
+        _("booking.create.select_time"),
+        reply_markup=get_times_keyboard(available_times, language, _)
+    )
     await state.set_state(BookingStates.selecting_time)
+    await safe_callback_answer(callback)
+
+
+async def _handle_time_change_proposal(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str],
+    state: FSMContext,
+    booking_id: int,
+    new_datetime: datetime,
+) -> None:
+    """Handle a mechanic or creator proposing a new time for an existing
+    booking (the "change time" flow entered from booking:change_time:/
+    booking:user_propose_time: and completed here once a new slot is picked).
+
+    Delegates the state transition + notification to BookingWorkflowService
+    so this handler only deals with Telegram-facing concerns (who is
+    allowed to propose, what message to show).
+    """
+    booking_service = BookingService(session)
+    booking = await booking_service.get_booking_details(booking_id)
+
+    if not booking:
+        await edit_or_ignore(callback, _("errors.unknown"))
+        await state.clear()
+        await safe_callback_answer(callback)
+        return
+
+    is_mechanic = user.role == UserRole.MECHANIC
+    is_creator = booking.creator_id == user.id
+
+    if not is_mechanic and not is_creator:
+        await edit_or_ignore(callback, _("errors.permission_denied"))
+        await state.clear()
+        await safe_callback_answer(callback)
+        return
+
+    workflow = BookingWorkflowService(session, callback.bot)
+    booking, msg = await workflow.propose_time_and_notify(
+        booking_id=booking_id,
+        proposer_telegram_id=user.telegram_id,
+        is_mechanic=is_mechanic,
+        new_datetime=new_datetime,
+    )
+
+    if booking:
+        confirmation_key = (
+            "booking.actions.change_time" if is_mechanic else "booking.actions.propose_new_time"
+        )
+        await edit_or_ignore(callback, _(confirmation_key) + ": " + _("booking.confirm.time_proposed"))
+        if callback.bot and isinstance(callback.message, TelegramMessage):
+            schedule_main_menu_return(callback.bot, callback.message.chat.id, user)
+    else:
+        await edit_or_ignore(callback, _("errors.unknown") + f"\n{msg}")
+
+    await state.clear()
     await safe_callback_answer(callback)
 
 
@@ -202,109 +248,39 @@ async def time_selected(
     if not callback.data:
         await safe_callback_answer(callback)
         return
-    
+
     if not callback.data or not callback.data.startswith("time:"):
         await safe_callback_answer(callback)
         return
     # Extract time string after "time:" prefix (use split with maxsplit=1 to preserve colons in ISO format)
     time_str = callback.data.split(":", 1)[1]
     booking_datetime = datetime.fromisoformat(time_str)
-    
+
     # Ensure booking_datetime is timezone-aware and in local timezone
     # Store time in local timezone (not UTC) as requested
-    from app.core.timezone_utils import ensure_local
     booking_datetime = ensure_local(booking_datetime)
-    
+
     # Get data from state
     data = await state.get_data()
     change_time_booking_id = data.get("change_time_booking_id")
-    
+
     # Check if this is time change flow
     if change_time_booking_id:
-        # Get booking to check who is proposing (mechanic or user)
-        from app.repositories.booking import BookingRepository
-        booking_repo = BookingRepository(session)
-        booking = await booking_repo.get_with_relations(change_time_booking_id)
-        
-        if not booking:
-            if isinstance(callback.message, TelegramMessage):
-                await callback.message.edit_text(_("errors.unknown"))
-            await state.clear()
-            await safe_callback_answer(callback)
-            return
-        
-        booking_service = BookingService(session)
-        
-        # Check if user is mechanic or creator
-        from app.models.user import UserRole
-        is_mechanic = user.role == UserRole.MECHANIC
-        is_creator = booking.creator_id == user.id
-        
-        if is_mechanic:
-            # Mechanic proposing new time
-            booking, msg = await booking_service.propose_new_time(
-                change_time_booking_id,
-                user.telegram_id,
-                booking_datetime
-            )
-            
-            if booking:
-                # Notify creator
-                if callback.bot and isinstance(callback.message, TelegramMessage):
-                    notification_service = NotificationService(session, callback.bot)
-                    await notification_service.notify_time_change_proposed(booking, user)
-                    
-                    await callback.message.edit_text(_("booking.actions.change_time") + ": " + _("booking.confirm.time_proposed"))
-                
-                # Return to main menu
-                if callback.bot and isinstance(callback.message, TelegramMessage):
-                    from app.bot.handlers.common import schedule_main_menu_return
-                    schedule_main_menu_return(callback.bot, callback.message.chat.id, user)
-            else:
-                if isinstance(callback.message, TelegramMessage):
-                    await callback.message.edit_text(_("errors.unknown") + f"\n{msg}")
-        elif is_creator:
-            # User (creator) proposing new time
-            booking, msg = await booking_service.propose_new_time_by_user(
-                change_time_booking_id,
-                user.telegram_id,
-                booking_datetime
-            )
-            
-            if booking:
-                # Notify mechanic if exists
-                if callback.bot and isinstance(callback.message, TelegramMessage) and booking.mechanic:
-                    notification_service = NotificationService(session, callback.bot)
-                    # Notify mechanic about user's time proposal
-                    await notification_service.notify_user_time_change_proposed(booking, user)
-                    
-                    await callback.message.edit_text(_("booking.actions.propose_new_time") + ": " + _("booking.confirm.time_proposed"))
-                
-                # Return to main menu
-                if callback.bot and isinstance(callback.message, TelegramMessage):
-                    from app.bot.handlers.common import schedule_main_menu_return
-                    schedule_main_menu_return(callback.bot, callback.message.chat.id, user)
-            else:
-                if isinstance(callback.message, TelegramMessage):
-                    await callback.message.edit_text(_("errors.unknown") + f"\n{msg}")
-        else:
-            if isinstance(callback.message, TelegramMessage):
-                await callback.message.edit_text(_("errors.permission_denied"))
-        
-        await state.clear()
-        await safe_callback_answer(callback)
+        await _handle_time_change_proposal(
+            callback, session, user, _, state, change_time_booking_id, booking_datetime
+        )
         return
-    
+
     # Normal booking creation flow
     # Save time
     await state.update_data(booking_time=time_str)
     
     # Ask for car brand and model together
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.enter_car_brand_model"),
-            reply_markup=get_cancel_keyboard(_)
-        )
+    await edit_or_ignore(
+        callback,
+        _("booking.create.enter_car_brand_model"),
+        reply_markup=get_cancel_keyboard(_)
+    )
     await state.set_state(BookingStates.entering_car_brand_model)
     await safe_callback_answer(callback)
 
@@ -402,64 +378,46 @@ async def client_phone_entered(message: TelegramMessage, _: Callable[[str], str]
     await state.set_state(BookingStates.entering_description)
 
 
-@router.callback_query(F.data == "booking:skip_description", BookingStates.entering_description)
-async def skip_description(
-    callback: CallbackQuery,
+async def _create_booking_and_respond(
+    *,
     session: AsyncSession,
     user: User,
+    state: FSMContext,
+    description: str,
+    bot: Bot | None,
     _: Callable[[str], str],
-    state: FSMContext
-):
-    """Handle skipping description"""
-    if not isinstance(callback.message, TelegramMessage):
-        await safe_callback_answer(callback)
-        return
-    
-    # Set empty description
-    description = ""
-    
-    # Get all data
+    language: str,
+    send_translating_message: Callable[[], Awaitable[TelegramMessage]],
+    show_result: Callable[[str], Awaitable[Any]],
+    answer: Callable[[str], Awaitable[Any]],
+) -> None:
+    """Shared tail of the booking-creation flow, used by both
+    skip_description and description_entered (they used to duplicate this
+    ~90-line block almost verbatim - see docs/SOLID_DRY_FACADE_REFACTORING_PLAN.md,
+    item 2.1). Resolves service_id from FSM state, creates the booking via
+    BookingWorkflowService (which also notifies mechanics on success), then
+    reports the result through the given responders.
+
+    Args:
+        show_result: Shows the booking details (success) or the error
+            message (failure) - edit_text for the callback flow, answer for
+            the plain-message flow.
+        answer: Sends a plain follow-up message (always .answer(), never
+            edit) - used for the "booking created" confirmation text.
+    """
     data = await state.get_data()
     service_id = data.get("service_id")
-    
+
     if not service_id:
-        await callback.message.edit_text(_("errors.unknown"))
+        await show_result(_("errors.unknown"))
         await state.clear()
-        await safe_callback_answer(callback)
         return
-    
-    # Show translating message
-    trans_msg = await callback.message.answer(_("booking.create.translating"))
-    
-    # Create booking
-    booking_service = BookingService(session)
-    booking_datetime = datetime.fromisoformat(data["booking_time"])
-    
-    # Log before ensure_local to see original time
-    import structlog
-    log = structlog.get_logger()
-    log.info(
-        "Parsed booking time from state",
-        time_str=data["booking_time"],
-        parsed_datetime=str(booking_datetime),
-        parsed_minute=booking_datetime.minute
-    )
-    
-    # Ensure booking_datetime is timezone-aware and in local timezone
-    # Store time in local timezone (not UTC) as requested
-    from app.core.timezone_utils import ensure_local
-    booking_datetime = ensure_local(booking_datetime)
-    
-    log.info(
-        "After ensure_local",
-        datetime=str(booking_datetime),
-        minute=booking_datetime.minute
-    )
-    
-    # Get language with fallback for booking creation
-    booking_language = get_user_language(user)
-    
-    booking, msg = await booking_service.create_booking(
+
+    trans_msg = await send_translating_message()
+
+    booking_datetime = ensure_local(datetime.fromisoformat(data["booking_time"]))
+    workflow = BookingWorkflowService(session, bot)
+    booking, msg = await workflow.create_booking_and_notify(
         creator_telegram_id=user.telegram_id,
         service_id=service_id,
         car_brand=data["car_brand"],
@@ -468,31 +426,49 @@ async def skip_description(
         client_name=data["client_name"],
         client_phone=data["client_phone"],
         description=description,
-        language=booking_language,
-        booking_datetime=booking_datetime
+        language=language,
+        booking_datetime=booking_datetime,
     )
-    
-    # Delete translating message
+
     await trans_msg.delete()
-    
+
     if booking:
-        # Format confirmation message
-        language = get_user_language(user)
         details = format_booking_details(booking, language, _)
-        
-        await callback.message.edit_text(details)
-        await callback.message.answer(_("booking.confirm.success"))
-        
-        # Notify all mechanics using NotificationService
-        if callback.bot:
-            from app.services.notification_service import NotificationService
-            notification_service = NotificationService(session, callback.bot)
-            await notification_service.notify_mechanics_new_booking(booking)
+        await show_result(details)
+        await answer(_("booking.confirm.success"))
     else:
-        await callback.message.edit_text(_("booking.confirm.error") + f"\n{msg}")
-    
-    # Clear state
+        await show_result(_("booking.confirm.error") + f"\n{msg}")
+
     await state.clear()
+
+
+@router.callback_query(F.data == "booking:skip_description", BookingStates.entering_description)
+async def skip_description(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str],
+    state: FSMContext,
+    language: str
+):
+    """Handle skipping description"""
+    if not isinstance(callback.message, TelegramMessage):
+        await safe_callback_answer(callback)
+        return
+
+    message = callback.message
+    await _create_booking_and_respond(
+        session=session,
+        user=user,
+        state=state,
+        description="",
+        bot=callback.bot,
+        _=_,
+        language=language,
+        send_translating_message=lambda: message.answer(_("booking.create.translating")),
+        show_result=message.edit_text,
+        answer=message.answer,
+    )
     await safe_callback_answer(callback)
 
 
@@ -502,86 +478,25 @@ async def description_entered(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Handle description input and create booking"""
     # Description is optional, so empty text is allowed
     description = message.text if message.text else ""
-    
-    # Get all data
-    data = await state.get_data()
-    service_id = data.get("service_id")
-    
-    if not service_id:
-        await message.answer(_("errors.unknown"))
-        await state.clear()
-        return
-    
-    # Show translating message
-    trans_msg = await message.answer(_("booking.create.translating"))
-    
-    # Create booking
-    booking_service = BookingService(session)
-    booking_datetime = datetime.fromisoformat(data["booking_time"])
-    
-    # Log before ensure_local to see original time
-    import structlog
-    log = structlog.get_logger()
-    log.info(
-        "Parsed booking time from state",
-        time_str=data["booking_time"],
-        parsed_datetime=str(booking_datetime),
-        parsed_minute=booking_datetime.minute
-    )
-    
-    # Ensure booking_datetime is timezone-aware and in local timezone
-    # Store time in local timezone (not UTC) as requested
-    from app.core.timezone_utils import ensure_local
-    booking_datetime = ensure_local(booking_datetime)
-    
-    log.info(
-        "After ensure_local",
-        datetime=str(booking_datetime),
-        minute=booking_datetime.minute
-    )
-    
-    # Get language with fallback for booking creation
-    booking_language = get_user_language(user)
-    
-    booking, msg = await booking_service.create_booking(
-        creator_telegram_id=user.telegram_id,
-        service_id=service_id,
-        car_brand=data["car_brand"],
-        car_model=data["car_model"],
-        car_number=data["car_number"],
-        client_name=data["client_name"],
-        client_phone=data["client_phone"],
+
+    await _create_booking_and_respond(
+        session=session,
+        user=user,
+        state=state,
         description=description,
-        language=booking_language,
-        booking_datetime=booking_datetime
+        bot=message.bot,
+        _=_,
+        language=language,
+        send_translating_message=lambda: message.answer(_("booking.create.translating")),
+        show_result=message.answer,
+        answer=message.answer,
     )
-    
-    # Delete translating message
-    await trans_msg.delete()
-    
-    if booking:
-        # Format confirmation message
-        language = get_user_language(user)
-        details = format_booking_details(booking, language, _)
-        
-        await message.answer(details)
-        await message.answer(_("booking.confirm.success"))
-        
-        # Notify all mechanics using NotificationService
-        if message.bot:
-            from app.services.notification_service import NotificationService
-            notification_service = NotificationService(session, message.bot)
-            await notification_service.notify_mechanics_new_booking(booking)
-    else:
-        await message.answer(_("booking.confirm.error") + f"\n{msg}")
-    
-    # Clear state
-    await state.clear()
 
 
 @router.callback_query(F.data.startswith("booking:user_propose_time:"))
@@ -590,7 +505,8 @@ async def user_propose_time(
     session: AsyncSession,
     user: User,
     _: Callable[[str], str],
-    state: FSMContext
+    state: FSMContext,
+    language: str
 ):
     """Handle user proposing new time for booking"""
     if not callback.data:
@@ -598,22 +514,19 @@ async def user_propose_time(
         return
     
     booking_id = int(callback.data.split(":")[2])
-    
+
     # Get booking to get service duration (with relations loaded)
-    from app.repositories.booking import BookingRepository
-    booking_repo = BookingRepository(session)
-    booking = await booking_repo.get_with_relations(booking_id)
-    
+    booking_service = BookingService(session)
+    booking = await booking_service.get_booking_details(booking_id)
+
     if not booking or not booking.service:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.unknown"))
+        await edit_or_ignore(callback, _("errors.unknown"))
         await safe_callback_answer(callback)
         return
     
     # Verify user is the creator
     if booking.creator_id != user.id:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.permission_denied"))
+        await edit_or_ignore(callback, _("errors.permission_denied"))
         await safe_callback_answer(callback)
         return
     
@@ -629,20 +542,16 @@ async def user_propose_time(
     
     # Check if there are any available dates
     if not dates:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("booking.create.no_available_dates"))
+        await edit_or_ignore(callback, _("booking.create.no_available_dates"))
         await safe_callback_answer(callback)
         return
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
     # Show dates
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.select_date"),
-            reply_markup=get_dates_keyboard(dates, language)
-        )
+    await edit_or_ignore(
+        callback,
+        _("booking.create.select_date"),
+        reply_markup=get_dates_keyboard(dates, language)
+    )
     await state.set_state(BookingStates.selecting_date)
     await safe_callback_answer(callback)
 
@@ -664,29 +573,21 @@ async def confirm_proposed_time(
         await safe_callback_answer(callback)
         return
     
-    # Confirm time
-    booking_service = BookingService(session)
-    booking, msg = await booking_service.confirm_proposed_time(booking_id, user.telegram_id)
-    
+    # Confirm time and notify the mechanic in one step
+    workflow = BookingWorkflowService(session, callback.bot)
+    booking, msg = await workflow.confirm_time_and_notify(
+        booking_id=booking_id, creator_telegram_id=user.telegram_id
+    )
+
     if booking:
-        # Notify using NotificationService
-        if callback.bot and isinstance(callback.message, TelegramMessage):
-            notification_service = NotificationService(session, callback.bot)
-            
-            # Notify mechanic that user confirmed the proposed time
-            if booking.mechanic:
-                await notification_service.notify_time_confirmed(booking, user)
-            
-            await callback.message.edit_text(_("booking.confirm.success"))
-        
+        await edit_or_ignore(callback, _("booking.confirm.success"))
+
         # Return to main menu
         if callback.bot and isinstance(callback.message, TelegramMessage):
-            from app.bot.handlers.common import schedule_main_menu_return
             schedule_main_menu_return(callback.bot, callback.message.chat.id, user)
     else:
-        if isinstance(callback.message, TelegramMessage):
-            await callback.message.edit_text(_("errors.unknown") + f"\n{msg}")
-    
+        await edit_or_ignore(callback, _("errors.unknown") + f"\n{msg}")
+
     await safe_callback_answer(callback)
 
 
@@ -703,12 +604,12 @@ async def cancel_booking_callback(
     
     # Return to main menu
     menu_text, keyboard = _build_menu_payload(user)
-    if isinstance(callback.message, TelegramMessage):
-        await callback.message.edit_text(
-            _("booking.create.booking_cancelled") + "\n\n" + menu_text,
-            reply_markup=keyboard
-        )
-    
+    await edit_or_ignore(
+        callback,
+        _("booking.create.booking_cancelled") + "\n\n" + menu_text,
+        reply_markup=keyboard
+    )
+
     await safe_callback_answer(callback)
 
 
@@ -721,36 +622,34 @@ async def show_my_bookings(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Show user's bookings"""
-    from app.repositories.booking import BookingRepository
     from app.models.booking import BookingStatus
-    
-    booking_repo = BookingRepository(session)
-    bookings = await booking_repo.get_by_creator(user.id)
-    
+
+    booking_service = BookingService(session)
+    bookings = await booking_service.get_user_bookings(user.telegram_id)
+
     if not bookings:
-        if isinstance(callback.message, TelegramMessage):
-            keyboard = InlineKeyboardBuilder()
-            keyboard.row(
-                InlineKeyboardButton(
-                    text=_("common.back"),
-                    callback_data="menu:main"
-                )
+        keyboard = InlineKeyboardBuilder()
+        keyboard.row(
+            InlineKeyboardButton(
+                text=_("common.back"),
+                callback_data="menu:main"
             )
-            await callback.message.edit_text(
-                _("booking.my_bookings.no_bookings"),
-                reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
-            )
+        )
+        await edit_or_ignore(
+            callback,
+            _("booking.my_bookings.no_bookings"),
+            reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
+        )
         await safe_callback_answer(callback)
         return
     
     # Format bookings list
     text = _("booking.my_bookings.title") + "\n\n"
-    
-    language = get_user_language(user)
-    
+
     for booking in bookings:
         status_emoji = {
             BookingStatus.PENDING: "⏳",
@@ -767,17 +666,17 @@ async def show_my_bookings(
             text += f"   🔧 {booking.mechanic.get_display_name()}\n"
         text += "\n"
     
-    if isinstance(callback.message, TelegramMessage):
-        keyboard = InlineKeyboardBuilder()
-        keyboard.row(
-            InlineKeyboardButton(
-                text=_("common.back"),
-                callback_data="menu:main"
-            )
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(
+        InlineKeyboardButton(
+            text=_("common.back"),
+            callback_data="menu:main"
         )
-        await callback.message.edit_text(
-            text,
-            reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
-        )
+    )
+    await edit_or_ignore(
+        callback,
+        text,
+        reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
+    )
     await safe_callback_answer(callback)
 

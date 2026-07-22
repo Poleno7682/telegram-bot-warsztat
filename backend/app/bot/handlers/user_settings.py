@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.services.auth_service import AuthService
-from app.repositories.user import UserRepository
 from app.bot.keyboards.inline import (
     get_user_settings_keyboard,
     get_language_keyboard,
@@ -236,16 +235,15 @@ async def toggle_reminder_setting(
         return
     
     new_value = not getattr(user, attr_name)
-    
-    repo = UserRepository(session)
-    updated_user = await repo.update_reminder_settings(
+
+    auth_service = AuthService(session)
+    updated_user = await auth_service.update_reminder_settings(
         user.telegram_id,
         **{attr_name: new_value}
     )
     if updated_user:
-        await session.commit()
         setattr(user, attr_name, new_value)
-        
+
         await send_clean_menu(
             callback=callback,
             text=get_reminder_status_text(user, _),

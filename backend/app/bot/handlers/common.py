@@ -1,46 +1,55 @@
 """Common handlers - main menu and navigation"""
 
-import asyncio
 from typing import Callable, Union, Tuple
 
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.types import Message as TelegramMessage, CallbackQuery, InlineKeyboardMarkup
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramBadRequest
 
-from app.models.user import User, UserRole
-from app.core.deferred_message_manager import get_deferred_message_manager
-from app.utils.user_utils import get_user_language
-from app.bot.keyboards.inline import (
-    get_main_menu_keyboard,
-    get_admin_menu_keyboard,
-    get_mechanic_menu_keyboard
-)
+from app.models.user import User
+from app.bot.ui.menu import build_menu_payload as _build_menu_payload, schedule_main_menu_return
 
 router = Router(name="common")
 
+# Re-exported for backward compatibility: handlers across the codebase import
+# schedule_main_menu_return from this module. The implementation itself lives
+# in app.bot.ui.menu, which app.services.notification_service also depends on
+# (services must not import from app.bot.handlers - see
+# docs/SOLID_DRY_FACADE_REFACTORING_PLAN.md, item 1.1).
+__all__ = [
+    "router",
+    "safe_callback_answer",
+    "send_clean_menu",
+    "schedule_main_menu_return",
+    "show_main_menu",
+    "edit_or_ignore",
+]
 
-def _build_menu_payload(user: User) -> tuple[str, InlineKeyboardMarkup]:
-    """Build menu text and keyboard for given user"""
-    from app.core.i18n import get_text
-    
-    # Use user's language or fallback to first supported language
-    language = get_user_language(user)
-    
-    def _(key: str, **kwargs) -> str:
-        return get_text(key, language, **kwargs)
-    
-    if user.role == UserRole.ADMIN:
-        menu_text = _("menu.admin.title")
-        keyboard = get_admin_menu_keyboard(_)
-    elif user.role == UserRole.MECHANIC:
-        menu_text = _("menu.mechanic.title")
-        keyboard = get_mechanic_menu_keyboard(_)
-    else:
-        menu_text = _("menu.main.title")
-        keyboard = get_main_menu_keyboard(_)
-    
-    return menu_text, keyboard
+
+async def edit_or_ignore(callback: CallbackQuery, text: str, **kwargs) -> bool:
+    """
+    Edit callback.message's text if it's a real, editable Message.
+
+    callback.message can be an InaccessibleMessage (e.g. too old, or the bot
+    was restarted) - in that case there's nothing sensible to edit, so this
+    is a no-op. Introduced to replace the repeated
+    `if isinstance(callback.message, TelegramMessage): await callback.message.edit_text(...)`
+    guard that appeared ~40 times across the booking/mechanic handlers - see
+    docs/SOLID_DRY_FACADE_REFACTORING_PLAN.md, item 2.2.
+
+    Args:
+        callback: Callback query whose message should be edited
+        text: New text
+        **kwargs: Extra arguments forwarded to edit_text (e.g. reply_markup)
+
+    Returns:
+        True if the message was edited, False if there was nothing to edit
+    """
+    if not isinstance(callback.message, TelegramMessage):
+        return False
+    await callback.message.edit_text(text, **kwargs)
+    return True
 
 
 async def safe_callback_answer(
@@ -102,42 +111,6 @@ async def send_clean_menu(
         chat_id=callback.message.chat.id,
         text=text,
         reply_markup=reply_markup
-    )
-
-
-def schedule_main_menu_return(
-    bot: Bot | None,
-    chat_id: int,
-    user: User,
-    delay: float = 3.0
-):
-    """
-    Schedule automatic return to main menu after delay
-    
-    Uses DeferredMessageManager to prevent duplicate messages if called multiple times
-    for the same chat.
-    """
-    if not bot:
-        return
-    
-    async def _send_menu():
-        menu_text, keyboard = _build_menu_payload(user)
-        try:
-            await bot.send_message(chat_id, menu_text, reply_markup=keyboard)
-        except TelegramBadRequest:
-            # Ignore if message cannot be sent
-            pass
-    
-    # Use deferred message manager to prevent duplicates
-    manager = get_deferred_message_manager()
-    asyncio.create_task(
-        manager.schedule_message(
-            bot=bot,
-            chat_id=chat_id,
-            message_func=_send_menu,
-            delay=delay,
-            cancel_previous=True
-        )
     )
 
 

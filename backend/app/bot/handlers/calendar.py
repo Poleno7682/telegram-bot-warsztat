@@ -8,9 +8,8 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole
-from app.repositories.booking import BookingRepository
+from app.services.booking_service import BookingService
 from app.bot.keyboards.inline import get_calendar_keyboard
-from app.utils.user_utils import get_user_language
 from app.utils.date_formatter import DateFormatter
 from app.bot.handlers.common import send_clean_menu
 
@@ -18,19 +17,19 @@ router = Router(name="calendar")
 
 
 async def _get_available_calendar_dates(
-    booking_repo: BookingRepository,
+    booking_service: BookingService,
     days_ahead: int = 6
 ) -> List[date]:
     """Get list of dates with bookings within the next days_ahead range"""
     today = date.today()
     available_dates: List[date] = []
-    
+
     for offset in range(0, days_ahead + 1):
         target_date = today + timedelta(days=offset)
-        bookings = await booking_repo.get_by_date(target_date)
+        bookings = await booking_service.get_bookings_by_date(target_date)
         if bookings:
             available_dates.append(target_date)
-    
+
     return available_dates
 
 
@@ -39,19 +38,17 @@ async def show_calendar_menu(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Display calendar navigation buttons"""
     if user.role not in (UserRole.ADMIN, UserRole.MECHANIC):
         await callback.answer(_("errors.permission_denied"), show_alert=True)
         return
-    
-    booking_repo = BookingRepository(session)
-    available_dates = await _get_available_calendar_dates(booking_repo)
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+
+    booking_service = BookingService(session)
+    available_dates = await _get_available_calendar_dates(booking_service)
+
     text = (
         _("calendar.title") + "\n\n" + _("calendar.select_day")
         if available_dates
@@ -71,7 +68,8 @@ async def show_calendar_day(
     callback: CallbackQuery,
     session: AsyncSession,
     user: User,
-    _: Callable[[str], str]
+    _: Callable[[str], str],
+    language: str
 ):
     """Show bookings for selected day"""
     if not callback.data:
@@ -90,13 +88,10 @@ async def show_calendar_day(
         await callback.answer(_("errors.invalid_input"), show_alert=True)
         return
     
-    booking_repo = BookingRepository(session)
-    bookings = await booking_repo.get_by_date(target_date)
-    available_dates = await _get_available_calendar_dates(booking_repo)
-    
-    # Get language with fallback
-    language = get_user_language(user)
-    
+    booking_service = BookingService(session)
+    bookings = await booking_service.get_bookings_by_date(target_date)
+    available_dates = await _get_available_calendar_dates(booking_service)
+
     date_text = DateFormatter.format_date(target_date, language)
     
     if not bookings:
