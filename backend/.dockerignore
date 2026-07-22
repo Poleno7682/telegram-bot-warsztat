@@ -1,0 +1,29 @@
+.env
+.env.local
+*.env
+
+# Database files - persisted via volume, never baked into the image
+db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docs (not needed at runtime)
+*.md
+
+# VCS / editor
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Tests (not needed in the runtime image)
+tests/

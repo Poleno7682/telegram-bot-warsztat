@@ -1,32 +1,35 @@
 #!/bin/bash
-# Linux/Mac Setup Script for Telegram Bot
-# This script sets up the development environment
+# Linux/Mac Setup Script for Telegram Bot (Docker)
+# Prepares .env and builds the Docker image. See DOCKER.md for details.
 
 set -e
 
 echo "========================================"
-echo "   Telegram Bot - Setup (Linux/Mac)"
+echo "   Telegram Bot - Setup (Docker)"
 echo "========================================"
 echo ""
 
-# Check Python version
-if ! command -v python3 &> /dev/null; then
-    echo "[ERROR] Python 3 is not installed"
-    echo "Please install Python 3.11 or higher"
+# Check Docker
+if ! command -v docker &> /dev/null; then
+    echo "[ERROR] Docker is not installed"
+    echo "Install it from: https://docs.docker.com/engine/install/"
     exit 1
 fi
 
-echo "[INFO] Python found"
-python3 --version
+echo "[INFO] Docker found"
+docker --version
 echo ""
 
-# Upgrade pip
-echo "[INFO] Upgrading pip..."
-python3 -m pip install --upgrade pip --user
+# Check Docker Compose (v2 plugin, "docker compose", not the old "docker-compose")
+if ! docker compose version &> /dev/null; then
+    echo "[ERROR] Docker Compose plugin is not available (tried: docker compose version)"
+    echo "Install it from: https://docs.docker.com/compose/install/"
+    exit 1
+fi
 
-# Install requirements
-echo "[INFO] Installing requirements..."
-python3 -m pip install -r backend/requirements.txt --user
+echo "[INFO] Docker Compose found"
+docker compose version
+echo ""
 
 # Create .env if not exists
 if [ ! -f "backend/.env" ]; then
@@ -35,20 +38,13 @@ if [ ! -f "backend/.env" ]; then
     echo "[SUCCESS] .env file created"
     echo "[IMPORTANT] Please edit backend/.env and add your BOT_TOKEN and ADMIN_IDS"
 else
-    echo "[INFO] .env file already exists"
+    echo "[INFO] backend/.env already exists"
 fi
 
-# Create db directory
-if [ ! -d "backend/db" ]; then
-    echo "[INFO] Creating database directory..."
-    mkdir -p backend/db
-fi
-
-# Run migrations
-echo "[INFO] Running database migrations..."
-cd backend
-python3 -m alembic upgrade head
-cd ..
+# Build the image (migrations run automatically on container start, not here)
+echo ""
+echo "[INFO] Building Docker image..."
+docker compose build
 
 echo ""
 echo "========================================"
@@ -60,4 +56,5 @@ echo "1. Edit backend/.env with your BOT_TOKEN and ADMIN_IDS"
 echo "2. Make run_bot.sh executable: chmod +x run_bot.sh"
 echo "3. Run the bot with: ./run_bot.sh"
 echo ""
-
+echo "For a local PostgreSQL instead of an external database, see DOCKER.md"
+echo ""

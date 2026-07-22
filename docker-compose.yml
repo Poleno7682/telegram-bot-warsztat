@@ -1,0 +1,44 @@
+services:
+  bot:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - bot_db:/app/db
+      - bot_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+
+  # Optional local PostgreSQL, for when you don't already have a managed/external
+  # database (like the current .env's DB_HOST pointing at a remote server).
+  # Disabled by default - enable with: docker compose --profile local-db up -d
+  # If you use it, point the bot at it by setting in backend/.env:
+  #   DB_HOST=db
+  #   DB_PORT=5432
+  #   DB_USER=${POSTGRES_USER}
+  #   DB_PASSWORD=${POSTGRES_PASSWORD}
+  #   DB_NAME=${POSTGRES_DB}
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: ["local-db"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bot_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_set_a_real_password}
+      POSTGRES_DB: ${POSTGRES_DB:-telegram_bot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bot_user} -d ${POSTGRES_DB:-telegram_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bot_db:
+  bot_logs:
+  postgres_data:

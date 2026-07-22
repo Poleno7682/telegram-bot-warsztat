@@ -1,15 +1,17 @@
 @echo off
-REM Telegram Bot Launcher for Windows
-REM This script runs the bot with proper environment
+REM Telegram Bot Launcher for Windows (Docker)
+REM Builds (if needed) and runs the bot via docker compose, attached to logs.
+REM Press Ctrl+C to stop.
 
 echo ========================================
 echo    Telegram Bot - Auto Service
 echo ========================================
 echo.
 
-REM Check if virtual environment exists
-if not exist "backend\venv\Scripts\activate.bat" (
-    echo [ERROR] Virtual environment not found!
+REM Check Docker
+docker compose version >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Docker / Docker Compose not found!
     echo Please run setup_windows.bat first
     pause
     exit /b 1
@@ -17,18 +19,15 @@ if not exist "backend\venv\Scripts\activate.bat" (
 
 REM Check if .env exists
 if not exist "backend\.env" (
-    echo [ERROR] Configuration file .env not found!
+    echo [ERROR] Configuration file backend\.env not found!
     echo Please copy backend\env.example to backend\.env and configure it
     pause
     exit /b 1
 )
 
-REM Run the bot
+REM Run the bot (foreground; Ctrl+C stops the containers)
 echo [INFO] Starting bot...
 echo.
-python run_bot.py
-
-
+docker compose up --build
 
 pause
-

@@ -1,6 +1,17 @@
 # Руководство по развертыванию на VPS
 
-## Предварительные требования
+## Docker (рекомендуется)
+
+Начиная с этой версии бот запускается в Docker — это не требует установки
+Python/зависимостей на хост и упрощает обновление/откат. Инструкции — в
+[`DOCKER.md`](../DOCKER.md).
+
+Остальная часть этого документа описывает **legacy-способ** развёртывания
+напрямую на VPS через systemd (без Docker) — он всё ещё работает и может
+использоваться, если Docker недоступен, но новых изменений в него вноситься
+не будет.
+
+## Предварительные требования (для варианта без Docker)
 
 - VPS с Ubuntu 20.04+ или Debian 11+
 - Root доступ или sudo права
@@ -51,7 +62,7 @@ sudo apt install -y python3 python3-pip git
 #### 2. Создание пользователя
 
 ```bash
-sudo useradd -r -s /bin/bash -d /opt/telegram-bot bot
+sudo useradd -r -s /bin/bash -d /root/telegram-bot bot
 ```
 
 #### 3. Клонирование проекта
@@ -65,7 +76,7 @@ sudo chown -R bot:bot telegram-bot
 #### 4. Установка Python зависимостей
 
 ```bash
-cd /opt/telegram-bot/backend
+cd /root/telegram-bot/backend
 sudo -u bot python3 -m pip install --upgrade pip --user
 sudo -u bot python3 -m pip install -r requirements.txt --user
 ```
@@ -103,7 +114,7 @@ sudo -u bot python3 -m alembic upgrade head
 
 ```bash
 # Запустить скрипт установки сервиса
-cd /opt/telegram-bot/backend
+cd /root/telegram-bot/backend
 sudo bash scripts/install_service.sh
 ```
 
@@ -173,7 +184,7 @@ DATABASE_URL=postgresql+asyncpg://bot_user:your_secure_password@localhost:5432/t
 ### 4. Запуск миграций
 
 ```bash
-cd /opt/telegram-bot/backend
+cd /root/telegram-bot/backend
 sudo -u bot python3 -m alembic upgrade head
 ```
 
@@ -211,7 +222,7 @@ sudo journalctl -u telegram-bot --since today
 sudo systemctl stop telegram-bot
 
 # Обновить код
-cd /opt/telegram-bot
+cd /root/telegram-bot
 sudo -u bot git pull
 
 # Обновить зависимости (если изменились)
@@ -231,10 +242,10 @@ sudo systemctl start telegram-bot
 
 ```bash
 # Создать backup
-sudo -u bot cp /opt/telegram-bot/backend/db/bot.db /backup/bot.db.$(date +%Y%m%d_%H%M%S)
+sudo -u bot cp /root/telegram-bot/backend/db/bot.db /backup/bot.db.$(date +%Y%m%d_%H%M%S)
 
 # Восстановить из backup
-sudo -u bot cp /backup/bot.db.20241121_120000 /opt/telegram-bot/backend/db/bot.db
+sudo -u bot cp /backup/bot.db.20241121_120000 /root/telegram-bot/backend/db/bot.db
 ```
 
 ### PostgreSQL
@@ -260,7 +271,7 @@ sudo crontab -e
 Добавить строку:
 ```cron
 # Backup каждый день в 3:00
-0 3 * * * cp /opt/telegram-bot/backend/db/bot.db /backup/bot.db.$(date +\%Y\%m\%d)
+0 3 * * * cp /root/telegram-bot/backend/db/bot.db /backup/bot.db.$(date +\%Y\%m\%d)
 ```
 
 ### Мониторинг логов
@@ -273,7 +284,7 @@ sudo nano /etc/logrotate.d/telegram-bot
 
 Содержимое:
 ```
-/opt/telegram-bot/backend/*.log {
+/root/telegram-bot/backend/*.log {
     daily
     rotate 14
     compress
@@ -289,7 +300,7 @@ sudo nano /etc/logrotate.d/telegram-bot
 
 1. **Ограничить доступ к .env файлу:**
 ```bash
-sudo chmod 600 /opt/telegram-bot/backend/.env
+sudo chmod 600 /root/telegram-bot/backend/.env
 ```
 
 2. **Использовать firewall:**

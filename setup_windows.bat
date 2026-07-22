@@ -1,47 +1,37 @@
 @echo off
-REM Windows Setup Script for Telegram Bot
-REM This script sets up the development environment
+REM Windows Setup Script for Telegram Bot (Docker)
+REM Prepares .env and builds the Docker image. See DOCKER.md for details.
 
 echo ========================================
-echo    Telegram Bot - Setup (Windows)
+echo    Telegram Bot - Setup (Docker)
 echo ========================================
 echo.
 
-REM Check Python version
-python --version >nul 2>&1
+REM Check Docker
+docker --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python is not installed or not in PATH
-    echo Please install Python 3.11 or higher
+    echo [ERROR] Docker is not installed or not in PATH
+    echo Install Docker Desktop from: https://www.docker.com/products/docker-desktop/
     pause
     exit /b 1
 )
 
-echo [INFO] Python found
-python --version
+echo [INFO] Docker found
+docker --version
 echo.
 
-REM Create virtual environment
-if not exist "backend\venv" (
-    echo [INFO] Creating virtual environment...
-    cd backend
-    python -m venv venv
-    cd ..
-    echo [SUCCESS] Virtual environment created
-) else (
-    echo [INFO] Virtual environment already exists
+REM Check Docker Compose (v2 plugin, "docker compose")
+docker compose version >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Docker Compose plugin is not available (tried: docker compose version)
+    echo Update Docker Desktop to a version that includes Compose v2
+    pause
+    exit /b 1
 )
 
+echo [INFO] Docker Compose found
+docker compose version
 echo.
-echo [INFO] Activating virtual environment...
-call backend\venv\Scripts\activate.bat
-
-REM Upgrade pip
-echo [INFO] Upgrading pip...
-python -m pip install --upgrade pip
-
-REM Install requirements
-echo [INFO] Installing requirements...
-pip install -r backend\requirements.txt
 
 REM Create .env if not exists
 if not exist "backend\.env" (
@@ -50,20 +40,13 @@ if not exist "backend\.env" (
     echo [SUCCESS] .env file created
     echo [IMPORTANT] Please edit backend\.env and add your BOT_TOKEN and ADMIN_IDS
 ) else (
-    echo [INFO] .env file already exists
+    echo [INFO] backend\.env already exists
 )
 
-REM Create db directory
-if not exist "backend\db" (
-    echo [INFO] Creating database directory...
-    mkdir backend\db
-)
-
-REM Run migrations
-echo [INFO] Running database migrations...
-cd backend
-alembic upgrade head
-cd ..
+REM Build the image (migrations run automatically on container start, not here)
+echo.
+echo [INFO] Building Docker image...
+docker compose build
 
 echo.
 echo ========================================
@@ -74,7 +57,7 @@ echo Next steps:
 echo 1. Edit backend\.env with your BOT_TOKEN and ADMIN_IDS
 echo 2. Run the bot with: run_bot.bat
 echo.
+echo For a local PostgreSQL instead of an external database, see DOCKER.md
+echo.
 
-deactivate
 pause
-

@@ -29,16 +29,22 @@ Telegram-Bot-Warsztat/
 │   ├── setup_windows.bat                 # Windows setup
 │   └── setup_linux.sh                    # Linux/Mac setup
 │
-├── 🚀 Deployment
+├── 🐳 Docker
+│   ├── docker-compose.yml                # bot + optional local PostgreSQL
+│   ├── backend/Dockerfile
+│   └── backend/docker/entrypoint.sh      # migrations + start
+│
+├── 🚀 Deployment (legacy, without Docker)
 │   ├── deployment/
 │   │   ├── systemd/                     # systemd unit files
 │   │   └── logrotate/                    # logrotate configs
 │
 └── 📚 Documentation
     ├── README.md                         # This file
+    ├── DOCKER.md                         # Docker deployment guide
     ├── backend/README.md                 # Backend docs
     ├── backend/QUICKSTART.md             # Quick start guide
-    └── backend/DEPLOYMENT.md             # Deployment guide
+    └── backend/DEPLOYMENT.md             # Legacy (non-Docker) deployment guide
 ```
 
 ## 📋 Детальная структура
@@ -258,8 +264,9 @@ python3 run_bot.py
 
 ## 📖 Документация
 
+- [🐳 DOCKER.md](DOCKER.md) - Развёртывание в Docker (рекомендуется)
 - [📘 QUICKSTART.md](backend/QUICKSTART.md) - Подробный гайд по запуску и использованию
-- [🚀 DEPLOYMENT.md](backend/DEPLOYMENT.md) - Развертывание на VPS
+- [🚀 DEPLOYMENT.md](backend/DEPLOYMENT.md) - Развертывание на VPS без Docker (legacy)
 - [⚙️ Backend README](backend/README.md) - Детальное описание backend
 
 ## 🛠️ Технологии
@@ -286,7 +293,32 @@ python3 run_bot.py
 - CPU: 2+ cores
 - OS: Ubuntu 22.04 LTS или Debian 12
 
-### VPS (Linux)
+### Docker (рекомендуется)
+
+```bash
+# 1. Клонировать проект
+git clone https://github.com/Poleno7682/telegram-bot-warsztat.git telegram-bot
+cd telegram-bot
+
+# 2. Настроить .env
+cp backend/env.example backend/.env
+nano backend/.env   # BOT_TOKEN, ADMIN_IDS, данные БД
+
+# 3. Запустить
+docker compose up -d --build
+```
+
+Миграции применяются автоматически при старте контейнера. Подробнее,
+включая вариант с локальным PostgreSQL в Docker: [DOCKER.md](DOCKER.md).
+
+**Управление:**
+```bash
+docker compose logs -f bot   # логи
+docker compose ps            # статус
+docker compose down          # остановить
+```
+
+### VPS без Docker (legacy)
 
 ```bash
 # 1. Клонировать проект
@@ -298,16 +330,6 @@ cd telegram-bot/backend
 sudo bash scripts/setup.sh
 
 # 3. Установить как systemd service
-sudo bash scripts/install_service.sh
-```
-
-### Systemd Service
-
-Бот устанавливается как systemd service и автоматически запускается при старте системы.
-
-**Установка сервиса:**
-```bash
-cd /opt/telegram-bot/backend
 sudo bash scripts/install_service.sh
 ```
 
