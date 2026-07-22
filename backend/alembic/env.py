@@ -2,7 +2,6 @@
 
 import asyncio
 from logging.config import fileConfig
-import os
 from pathlib import Path
 
 from sqlalchemy import pool
@@ -15,12 +14,8 @@ from alembic import context
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-
 # Import models and Base
-from app.models.base import Base
+from app.models.base import Base, TABLE_NAME_SUFFIX
 from app.models.user import User
 from app.models.service import Service
 from app.models.booking import Booking
@@ -36,9 +31,40 @@ if config.config_file_name is not None:
 # Set target metadata for autogenerate
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from environment variable
-database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./db/bot.db")
+# Resolve the DB URL exactly like the app does (app/config/database.py), instead of
+# reading os.getenv("DATABASE_URL") directly: when DATABASE_URL is unset/empty and
+# DB_HOST/DB_USER/DB_NAME are set instead (as in this project's .env), a raw
+# os.getenv("DATABASE_URL", "<sqlite fallback>") returns "" (the var IS set, just
+# empty) instead of falling back - which then fails to parse as a SQLAlchemy URL.
+from app.config.settings import get_settings
+database_url = get_settings().get_database_url()
 config.set_main_option("sqlalchemy.url", database_url)
+
+# The database can be shared with other, unrelated projects (see alembic
+# revision 79ffc7ef4513) - use a namespaced version table so this project's
+# migration history can't collide with another project's alembic_version row.
+VERSION_TABLE = "alembic_version_booking_bot"
+
+
+def include_object(object, name, type_, reflected, compare_to) -> bool:
+    """Keep autogenerate from ever looking at tables that aren't ours.
+
+    Since the database can be shared with other projects, `--autogenerate`
+    reflects EVERY table actually present (theirs included) and diffs it
+    against target_metadata (which only has our models). Without this
+    filter, autogenerate would propose `DROP TABLE` for another project's
+    tables just because they're not in our metadata - excluding anything
+    that isn't one of our namespaced tables makes that structurally
+    impossible.
+    """
+    if type_ == "table":
+        return name is not None and name.endswith(TABLE_NAME_SUFFIX)
+    # For columns/indexes/constraints, `object.table.name` is the owning
+    # table - only compare those that belong to one of our own tables.
+    table = getattr(object, "table", None)
+    if table is not None:
+        return table.name.endswith(TABLE_NAME_SUFFIX)
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -60,6 +86,8 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
         compare_server_default=True,
+        version_table=VERSION_TABLE,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -73,6 +101,8 @@ def do_run_migrations(connection: Connection) -> None:
         target_metadata=target_metadata,
         compare_type=True,
         compare_server_default=True,
+        version_table=VERSION_TABLE,
+        include_object=include_object,
     )
 
     with context.begin_transaction():

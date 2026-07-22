@@ -25,24 +25,26 @@ class BookingStatus(str, enum.Enum):
 class Booking(Base, TimestampMixin):
     """Booking model - represents service bookings"""
     
-    __tablename__ = "bookings"
-    
+    # Namespaced to avoid name collisions in a shared database - see
+    # alembic revision 79ffc7ef4513.
+    __tablename__ = "bookings_booking_bot"
+
     # Primary Key
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    
+
     # Foreign Keys
     creator_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users_booking_bot.id", ondelete="CASCADE"),
         nullable=False
     )
-    
+
     service_id: Mapped[int] = mapped_column(
-        ForeignKey("services.id", ondelete="RESTRICT"),
+        ForeignKey("services_booking_bot.id", ondelete="RESTRICT"),
         nullable=False
     )
-    
+
     mechanic_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users_booking_bot.id", ondelete="SET NULL"),
         nullable=True
     )
     

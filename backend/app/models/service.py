@@ -10,7 +10,9 @@ from .base import Base, TimestampMixin
 class Service(Base, TimestampMixin):
     """Service model - represents auto repair services"""
     
-    __tablename__ = "services"
+    # Namespaced to avoid name collisions in a shared database - see
+    # alembic revision 79ffc7ef4513.
+    __tablename__ = "services_booking_bot"
     
     # Primary Key
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

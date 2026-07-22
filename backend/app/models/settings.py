@@ -11,7 +11,9 @@ from .base import Base, TimestampMixin
 class SystemSettings(Base, TimestampMixin):
     """System settings model - singleton table for system configuration"""
     
-    __tablename__ = "system_settings"
+    # Namespaced to avoid name collisions in a shared database - see
+    # alembic revision 79ffc7ef4513.
+    __tablename__ = "system_settings_booking_bot"
     
     # Primary Key (should always be 1 for singleton)
     id: Mapped[int] = mapped_column(primary_key=True, default=1)

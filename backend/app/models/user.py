@@ -21,7 +21,10 @@ class UserRole(str, enum.Enum):
 class User(Base, TimestampMixin):
     """User model"""
     
-    __tablename__ = "users"
+    # Namespaced: this project's database can be shared with other, unrelated
+    # projects, and a plain "users" name previously collided with a different
+    # app's table of the same name (see alembic revision 79ffc7ef4513).
+    __tablename__ = "users_booking_bot"
     
     # Primary Key
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
