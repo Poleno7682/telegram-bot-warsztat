@@ -15,11 +15,13 @@ from app.bot.keyboards.inline import (
     get_service_management_keyboard,
 )
 from app.bot.states.booking import AddServiceStates
+from app.core.logging_config import get_logger
 from app.dto import ServiceCreateData
 from app.models.user import User
 from app.services.service_management_service import ServiceManagementService
 
 router = Router(name="admin-services")
+logger = get_logger(__name__)
 
 
 @router.callback_query(F.data == "admin:manage_services")
@@ -239,19 +241,27 @@ async def service_duration_entered(
 
     data = await state.get_data()
 
-    service_mgmt = ServiceManagementService(session)
-    service = await service_mgmt.create_service(
-        ServiceCreateData(
-            name_pl=data["name_pl"],
-            name_ru=data["name_ru"],
-            duration_minutes=duration,
+    try:
+        service_mgmt = ServiceManagementService(session)
+        service = await service_mgmt.create_service(
+            ServiceCreateData(
+                name_pl=data["name_pl"],
+                name_ru=data["name_ru"],
+                duration_minutes=duration,
+            )
         )
-    )
-
-    if service:
-        await message.answer(_("service_management.service_added"))
-    await state.clear()
-    schedule_main_menu_return(message.bot, message.chat.id, user)
+        if service:
+            await message.answer(_("service_management.service_added"))
+        else:
+            await message.answer(_("errors.unknown"))
+    except Exception as e:
+        logger.error("Failed to create service", error=str(e), exc_info=True)
+        await message.answer(_("errors.unknown"))
+    finally:
+        # Always leave the FSM state, even on failure - otherwise the user
+        # is stuck being asked for a duration forever with no way out.
+        await state.clear()
+        schedule_main_menu_return(message.bot, message.chat.id, user)
 
 
 @router.callback_query(F.data.startswith("service:edit:"))
