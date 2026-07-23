@@ -11,6 +11,7 @@ from app.models.user import User, UserRole
 from app.services.booking_service import BookingService
 from app.bot.keyboards.inline import get_calendar_keyboard
 from app.utils.date_formatter import DateFormatter
+from app.utils.booking_utils import format_booking_status
 from app.bot.handlers.common import send_clean_menu
 
 router = Router(name="calendar")
@@ -103,8 +104,9 @@ async def show_calendar_day(
                 booking.mechanic.full_name
                 if booking.mechanic else _("calendar.unassigned")
             )
-            status_key = f"calendar.status.{booking.status.value}"
-            status_text = _(status_key)
+            # with_emoji=False: this template already prefixes status with
+            # its own "⚙️" icon (see calendar.entry below).
+            status_text = format_booking_status(booking.status, _, with_emoji=False)
             text_lines.append(
                 _("calendar.entry").format(
                     time=DateFormatter.format_time(booking.booking_date),

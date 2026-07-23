@@ -18,7 +18,7 @@ from app.bot.states.booking import BookingStates
 from app.utils.date_formatter import DateFormatter
 from app.utils.validators import validate_phone
 from app.utils.callback_utils import parse_callback_data
-from app.utils.booking_utils import format_booking_details
+from app.utils.booking_utils import format_booking_details, format_booking_status
 from app.bot.keyboards.inline import (
     get_services_keyboard,
     get_dates_keyboard,
@@ -657,14 +657,9 @@ async def show_my_bookings(
     keyboard = InlineKeyboardBuilder()
 
     for booking in bookings:
-        status_emoji = {
-            BookingStatus.PENDING: "⏳",
-            BookingStatus.ACCEPTED: "✅",
-            BookingStatus.REJECTED: "❌",
-            BookingStatus.CANCELLED: "🚫"
-        }.get(booking.status, "❓")
+        status_text = format_booking_status(booking.status, _)
 
-        text += f"{status_emoji} {DateFormatter.format_date(booking.booking_date, language)} "
+        text += f"{status_text} — {DateFormatter.format_date(booking.booking_date, language)} "
         text += f"{DateFormatter.format_time(booking.booking_date)}\n"
         text += f"   🛠️ {booking.service.get_name(language)}\n"
         text += f"   🚗 {booking.car_brand} {booking.car_model}\n"

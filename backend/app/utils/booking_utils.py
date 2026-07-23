@@ -4,8 +4,55 @@ from datetime import date
 from typing import List, Dict, Callable
 from collections import defaultdict
 
-from app.models.booking import Booking
+from app.models.booking import Booking, BookingStatus
 from app.core.timezone_utils import normalize_to_local
+
+
+_STATUS_EMOJI: Dict[BookingStatus, str] = {
+    BookingStatus.PENDING: "⏳",
+    BookingStatus.NEGOTIATING: "🔄",
+    BookingStatus.ACCEPTED: "✅",
+    BookingStatus.REJECTED: "❌",
+    BookingStatus.COMPLETED: "🏁",
+    BookingStatus.CANCELLED: "🚫",
+}
+
+
+def get_booking_status_emoji(status: BookingStatus) -> str:
+    """Single place mapping a booking status to its emoji - see
+    format_booking_status for why this exists as its own function."""
+    return _STATUS_EMOJI.get(status, "❓")
+
+
+def format_booking_status(
+    status: BookingStatus,
+    translate: Callable[[str], str],
+    with_emoji: bool = True
+) -> str:
+    """
+    Format a booking status for display: the single place combining the
+    emoji and the translated label, so every screen that shows a booking's
+    status renders it the same way and picks up new statuses automatically.
+
+    Before this existed, one handler kept its own emoji-only dict (which
+    didn't even cover BookingStatus.NEGOTIATING) while another rendered
+    plain i18n text with no emoji - two independent mappings of the same
+    status enum that could silently drift apart when a status was added.
+
+    Args:
+        status: Booking status
+        translate: Translation function (i18n getter)
+        with_emoji: Set False for contexts that already prefix the status
+            with their own icon (e.g. the calendar entry template's "⚙️"),
+            to avoid a double emoji.
+
+    Returns:
+        e.g. "✅ Подтверждена", or "Подтверждена" if with_emoji=False
+    """
+    label = translate(f"calendar.status.{status.value}")
+    if not with_emoji:
+        return label
+    return f"{get_booking_status_emoji(status)} {label}"
 
 
 def format_booking_details(
