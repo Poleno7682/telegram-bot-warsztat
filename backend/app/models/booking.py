@@ -103,7 +103,15 @@ class Booking(Base, TimestampMixin):
     
     service: Mapped["Service"] = relationship(
         "Service",
-        back_populates="bookings"
+        back_populates="bookings",
+        # Every current query path already does selectinload(Booking.service)
+        # explicitly, but format_booking_details() and other callers access
+        # booking.service unconditionally, assuming it's loaded - lazy="select"
+        # (the default) would raise MissingGreenlet under async SQLAlchemy the
+        # first time a future query forgets that selectinload. Setting it here
+        # makes eager loading the default instead of something every call
+        # site has to remember.
+        lazy="selectin"
     )
     
     def __repr__(self) -> str:
