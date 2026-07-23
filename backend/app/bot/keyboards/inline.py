@@ -738,28 +738,35 @@ def get_cancel_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_skip_keyboard(_: Callable[[str], str]) -> InlineKeyboardMarkup:
+def get_skip_keyboard(
+    _: Callable[[str], str],
+    skip_callback_data: str = "booking:skip_description"
+) -> InlineKeyboardMarkup:
     """
-    Get skip keyboard for optional fields
-    
+    Get skip keyboard for optional fields.
+
     Args:
         _: Translation function
+        skip_callback_data: callback_data for the "Skip" button - defaults
+            to the description step (its original/only caller), but any
+            other optional-field step can reuse this keyboard by passing
+            its own callback_data instead of duplicating this function.
     """
     builder = InlineKeyboardBuilder()
-    
+
     builder.row(
         InlineKeyboardButton(
             text=_("common.skip"),
-            callback_data="booking:skip_description"
+            callback_data=skip_callback_data
         )
     )
-    
+
     builder.row(
         InlineKeyboardButton(
             text=_("common.cancel"),
             callback_data="booking:cancel"
         )
     )
-    
+
     return builder.as_markup()
 

@@ -30,6 +30,14 @@ from app.bot.handlers.common import safe_callback_answer, schedule_main_menu_ret
 
 router = Router(name="booking")
 
+# client_phone is NOT NULL in the DB (unlike description, which is stored
+# as an empty string when skipped and has a display-time fallback in
+# format_booking_details) and is shown in several places (notifications,
+# calendar, mechanic's booking list) without a shared getter to hang a
+# fallback off of - so skipping it stores this neutral placeholder
+# directly instead of an empty string.
+NO_PHONE_PLACEHOLDER = "-"
+
 
 @router.callback_query(F.data == "menu:new_booking")
 async def start_new_booking(
@@ -345,9 +353,30 @@ async def client_name_entered(message: TelegramMessage, _: Callable[[str], str],
     await state.update_data(client_name=message.text)
     await message.answer(
         _("booking.create.enter_client_phone"),
-        reply_markup=get_cancel_keyboard(_)
+        reply_markup=get_skip_keyboard(_, "booking:skip_phone")
     )
     await state.set_state(BookingStates.entering_client_phone)
+
+
+@router.callback_query(F.data == "booking:skip_phone", BookingStates.entering_client_phone)
+async def skip_client_phone(
+    callback: CallbackQuery,
+    _: Callable[[str], str],
+    state: FSMContext,
+):
+    """Handle skipping the client phone number - same pattern as
+    skip_description below, reused via the parameterized get_skip_keyboard."""
+    if not isinstance(callback.message, TelegramMessage):
+        await safe_callback_answer(callback)
+        return
+
+    await state.update_data(client_phone=NO_PHONE_PLACEHOLDER)
+    await callback.message.edit_text(
+        _("booking.create.enter_description"),
+        reply_markup=get_skip_keyboard(_)
+    )
+    await state.set_state(BookingStates.entering_description)
+    await safe_callback_answer(callback)
 
 
 @router.message(BookingStates.entering_client_phone)
@@ -357,19 +386,19 @@ async def client_phone_entered(message: TelegramMessage, _: Callable[[str], str]
     if not message.text:
         await message.answer(
             _("booking.create.phone_invalid"),
-            reply_markup=get_cancel_keyboard(_)
+            reply_markup=get_skip_keyboard(_, "booking:skip_phone")
         )
         return
-    
+
     # Validate phone number
     is_valid, phone = validate_phone(message.text)
     if not is_valid:
         await message.answer(
             _("booking.create.phone_invalid"),
-            reply_markup=get_cancel_keyboard(_)
+            reply_markup=get_skip_keyboard(_, "booking:skip_phone")
         )
         return
-    
+
     await state.update_data(client_phone=phone)
     await message.answer(
         _("booking.create.enter_description"),
