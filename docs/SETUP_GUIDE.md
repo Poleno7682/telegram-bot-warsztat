@@ -153,7 +153,7 @@ LOG_LEVEL=INFO
 
 ## 📚 Дополнительная документация:
 
-- [QUICKSTART.md](backend/QUICKSTART.md) - Подробное руководство
-- [DEPLOYMENT.md](backend/DEPLOYMENT.md) - Развертывание на VPS
+- [QUICKSTART.md](QUICKSTART.md) - Подробное руководство
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Развертывание на VPS
 - [README.md](README.md) - Полная документация проекта
 

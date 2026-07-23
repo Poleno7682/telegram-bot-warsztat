@@ -41,10 +41,10 @@ Telegram-Bot-Warsztat/
 │
 └── 📚 Documentation
     ├── README.md                         # This file
-    ├── DOCKER.md                         # Docker deployment guide
     ├── backend/README.md                 # Backend docs
-    ├── backend/QUICKSTART.md             # Quick start guide
-    └── backend/DEPLOYMENT.md             # Legacy (non-Docker) deployment guide
+    ├── docs/DOCKER.md                    # Docker deployment guide
+    ├── docs/QUICKSTART.md                # Quick start guide
+    └── docs/DEPLOYMENT.md                # Legacy (non-Docker) deployment guide
 ```
 
 ## 📋 Детальная структура
@@ -264,9 +264,9 @@ python3 run_bot.py
 
 ## 📖 Документация
 
-- [🐳 DOCKER.md](DOCKER.md) - Развёртывание в Docker (рекомендуется)
-- [📘 QUICKSTART.md](backend/QUICKSTART.md) - Подробный гайд по запуску и использованию
-- [🚀 DEPLOYMENT.md](backend/DEPLOYMENT.md) - Развертывание на VPS без Docker (legacy)
+- [🐳 DOCKER.md](docs/DOCKER.md) - Развёртывание в Docker (рекомендуется)
+- [📘 QUICKSTART.md](docs/QUICKSTART.md) - Подробный гайд по запуску и использованию
+- [🚀 DEPLOYMENT.md](docs/DEPLOYMENT.md) - Развертывание на VPS без Docker (legacy)
 - [⚙️ Backend README](backend/README.md) - Детальное описание backend
 
 ## 🛠️ Технологии
@@ -309,7 +309,7 @@ docker compose up -d --build
 ```
 
 Миграции применяются автоматически при старте контейнера. Подробнее,
-включая вариант с локальным PostgreSQL в Docker: [DOCKER.md](DOCKER.md).
+включая вариант с локальным PostgreSQL в Docker: [DOCKER.md](docs/DOCKER.md).
 
 **Управление:**
 ```bash
@@ -345,7 +345,7 @@ sudo systemctl status telegram-bot
 sudo journalctl -u telegram-bot -f
 ```
 
-Подробнее: [DEPLOYMENT.md](backend/DEPLOYMENT.md)
+Подробнее: [DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ## 🔧 Разработка
 

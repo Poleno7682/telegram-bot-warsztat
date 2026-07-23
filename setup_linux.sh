@@ -1,6 +1,6 @@
 #!/bin/bash
 # Linux/Mac Setup Script for Telegram Bot (Docker)
-# Prepares .env and builds the Docker image. See DOCKER.md for details.
+# Prepares .env and builds the Docker image. See docs/DOCKER.md for details.
 
 set -e
 
@@ -56,5 +56,5 @@ echo "1. Edit backend/.env with your BOT_TOKEN and ADMIN_IDS"
 echo "2. Make run_bot.sh executable: chmod +x run_bot.sh"
 echo "3. Run the bot with: ./run_bot.sh"
 echo ""
-echo "For a local PostgreSQL instead of an external database, see DOCKER.md"
+echo "For a local PostgreSQL instead of an external database, see docs/DOCKER.md"
 echo ""
