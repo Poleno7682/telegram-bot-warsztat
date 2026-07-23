@@ -75,7 +75,7 @@ async def select_language(
         session: Database session
     """
     if not callback.data or not callback.from_user:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     language = callback.data.split(":")[1]

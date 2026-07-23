@@ -12,7 +12,7 @@ from app.services.booking_service import BookingService
 from app.bot.keyboards.inline import get_calendar_keyboard
 from app.utils.date_formatter import DateFormatter
 from app.utils.booking_utils import format_booking_status
-from app.bot.handlers.common import send_clean_menu
+from app.bot.handlers.common import safe_callback_answer, send_clean_menu
 
 router = Router(name="calendar")
 
@@ -44,7 +44,7 @@ async def show_calendar_menu(
 ):
     """Display calendar navigation buttons"""
     if user.role not in (UserRole.ADMIN, UserRole.MECHANIC):
-        await callback.answer(_("errors.permission_denied"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.permission_denied"), show_alert=True)
         return
 
     booking_service = BookingService(session)
@@ -61,7 +61,7 @@ async def show_calendar_menu(
         text=text,
         reply_markup=get_calendar_keyboard(_, language, available_dates)
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("calendar:day:"))
@@ -74,11 +74,11 @@ async def show_calendar_day(
 ):
     """Show bookings for selected day"""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     if user.role not in (UserRole.ADMIN, UserRole.MECHANIC):
-        await callback.answer(_("errors.permission_denied"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.permission_denied"), show_alert=True)
         return
     
     try:
@@ -86,7 +86,7 @@ async def show_calendar_day(
         date_str = parts[2]
         target_date = date.fromisoformat(date_str)
     except ValueError:
-        await callback.answer(_("errors.invalid_input"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.invalid_input"), show_alert=True)
         return
     
     booking_service = BookingService(session)
@@ -129,5 +129,5 @@ async def show_calendar_day(
         text=text,
         reply_markup=get_calendar_keyboard(_, language, available_dates)
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 

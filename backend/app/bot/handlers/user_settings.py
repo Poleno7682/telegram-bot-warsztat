@@ -12,7 +12,7 @@ from app.bot.keyboards.inline import (
     get_language_keyboard,
     get_reminder_settings_keyboard
 )
-from app.bot.handlers.common import send_clean_menu
+from app.bot.handlers.common import safe_callback_answer, send_clean_menu
 
 router = Router(name="user_settings")
 
@@ -107,7 +107,7 @@ async def show_user_settings(
         text=text,
         reply_markup=get_user_settings_keyboard(_, user.role == UserRole.MECHANIC)
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "user_settings:change_language")
@@ -121,7 +121,7 @@ async def change_language_start(
         text=_("start.select_language"),
         reply_markup=get_language_keyboard()
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("lang:"))
@@ -133,7 +133,7 @@ async def change_language_process(
 ):
     """Process language change"""
     if not callback.data or not callback.from_user:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     language = callback.data.split(":")[1]
@@ -179,7 +179,7 @@ async def change_language_process(
             reply_markup=get_user_settings_keyboard(new_, updated_user.role == UserRole.MECHANIC)
         )
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "user_settings:reminders")
@@ -190,7 +190,7 @@ async def show_reminder_settings(
 ):
     """Display reminder settings menu for mechanics"""
     if user.role != UserRole.MECHANIC:
-        await callback.answer(_("errors.permission_denied"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.permission_denied"), show_alert=True)
         return
     
     text = get_reminder_status_text(user, _)
@@ -204,7 +204,7 @@ async def show_reminder_settings(
             _
         )
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("user_settings:toggle_reminder:"))
@@ -216,11 +216,11 @@ async def toggle_reminder_setting(
 ):
     """Toggle specific reminder interval"""
     if user.role != UserRole.MECHANIC:
-        await callback.answer(_("errors.permission_denied"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.permission_denied"), show_alert=True)
         return
     
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     target = callback.data.split(":")[-1]
@@ -231,7 +231,7 @@ async def toggle_reminder_setting(
     }
     attr_name = valid_fields.get(target)
     if not attr_name:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
     
     new_value = not getattr(user, attr_name)
@@ -255,5 +255,5 @@ async def toggle_reminder_setting(
             )
         )
     
-    await callback.answer()
+    await safe_callback_answer(callback)
 

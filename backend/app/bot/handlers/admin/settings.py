@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message as TelegramMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers.common import send_clean_menu, schedule_main_menu_return
+from app.bot.handlers.common import safe_callback_answer, send_clean_menu, schedule_main_menu_return
 from app.bot.keyboards.inline import get_cancel_keyboard, get_settings_keyboard
 from app.bot.states.booking import SettingsStates
 from app.services.settings_management_service import SettingsManagementService
@@ -39,7 +39,7 @@ async def settings_menu(
         text=text,
         reply_markup=get_settings_keyboard(_),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "settings:work_hours")
@@ -55,7 +55,7 @@ async def update_work_hours_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(SettingsStates.updating_work_start)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(SettingsStates.updating_work_start)
@@ -127,7 +127,7 @@ async def update_time_step_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(SettingsStates.updating_time_step)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(SettingsStates.updating_time_step)
@@ -173,7 +173,7 @@ async def update_buffer_time_start(
         reply_markup=get_cancel_keyboard(_),
     )
     await state.set_state(SettingsStates.updating_buffer_time)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(SettingsStates.updating_buffer_time)

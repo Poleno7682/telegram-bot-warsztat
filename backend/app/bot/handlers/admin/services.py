@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message as TelegramMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers.common import schedule_main_menu_return, send_clean_menu
+from app.bot.handlers.common import safe_callback_answer, schedule_main_menu_return, send_clean_menu
 from app.bot.keyboards.inline import (
     get_cancel_keyboard,
     get_service_edit_keyboard,
@@ -33,7 +33,7 @@ async def manage_services_menu(
         text=_("service_management.title"),
         reply_markup=get_service_management_keyboard(_),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "service:list")
@@ -54,7 +54,7 @@ async def list_services(
             text=_("service_management.no_services"),
             reply_markup=get_service_management_keyboard(_),
         )
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
 
     text = _("service_management.title") + "\n\n"
@@ -66,7 +66,7 @@ async def list_services(
         text=text,
         reply_markup=get_service_list_keyboard(services, language, _),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "service:add")
@@ -85,7 +85,7 @@ async def add_service_start(
     )
     await state.update_data(source_language=language)
     await state.set_state(AddServiceStates.entering_name_pl)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(AddServiceStates.entering_name_pl)
@@ -166,7 +166,7 @@ async def confirm_translation(
             reply_markup=get_cancel_keyboard(_),
         )
     await state.set_state(AddServiceStates.entering_duration)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data == "service:edit_manual")
@@ -183,7 +183,7 @@ async def edit_manual(
     )
     await state.update_data(name_pl=None, name_ru=None)
     await state.set_state(AddServiceStates.entering_name_pl_manual)
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.message(AddServiceStates.entering_name_pl_manual)
@@ -264,7 +264,7 @@ async def edit_service(
 ):
     """Show service edit options."""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
 
     service_id = int(callback.data.split(":")[2])
@@ -273,7 +273,7 @@ async def edit_service(
     service = await service_mgmt.get_service_by_id(service_id)
 
     if not service:
-        await callback.answer(_("errors.service_not_found"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.service_not_found"), show_alert=True)
         return
 
     text = f"""
@@ -288,7 +288,7 @@ async def edit_service(
         text=text,
         reply_markup=get_service_edit_keyboard(service_id, _),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
 
 @router.callback_query(F.data.startswith("service:delete:"))
@@ -299,7 +299,7 @@ async def delete_service(
 ):
     """Delete service."""
     if not callback.data:
-        await callback.answer()
+        await safe_callback_answer(callback)
         return
 
     service_id = int(callback.data.split(":")[2])
@@ -308,7 +308,7 @@ async def delete_service(
     success = await service_mgmt.delete_service(service_id)
 
     if not success:
-        await callback.answer(_("errors.service_not_found"), show_alert=True)
+        await safe_callback_answer(callback, _("errors.service_not_found"), show_alert=True)
         return
 
     await send_clean_menu(
@@ -316,5 +316,5 @@ async def delete_service(
         text=_("service_management.service_deleted"),
         reply_markup=get_service_management_keyboard(_),
     )
-    await callback.answer()
+    await safe_callback_answer(callback)
 
