@@ -31,18 +31,35 @@ class BookingService:
         BookingStatus.ACCEPTED,
     )
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        booking_repo: Optional[BookingRepository] = None,
+        service_repo: Optional[ServiceRepository] = None,
+        user_repo: Optional[UserRepository] = None,
+        time_service: Optional[TimeService] = None,
+    ):
         """
-        Initialize booking service
-        
+        Initialize booking service.
+
+        Repositories/collaborators default to the real implementation
+        (constructed from `session`) when not given, so existing call
+        sites (`BookingService(session)`) are unaffected. Tests can pass
+        fakes/mocks instead to avoid needing a real database session for
+        every unit test - see docs/REFACTORING_PLAN_2026-07.md, item 2.1.
+
         Args:
             session: Database session
+            booking_repo: Booking repository (defaults to BookingRepository(session))
+            service_repo: Service repository (defaults to ServiceRepository(session))
+            user_repo: User repository (defaults to UserRepository(session))
+            time_service: Time service (defaults to TimeService(session))
         """
         self.session = session
-        self.booking_repo = BookingRepository(session)
-        self.service_repo = ServiceRepository(session)
-        self.user_repo = UserRepository(session)
-        self.time_service = TimeService(session)
+        self.booking_repo = booking_repo if booking_repo is not None else BookingRepository(session)
+        self.service_repo = service_repo if service_repo is not None else ServiceRepository(session)
+        self.user_repo = user_repo if user_repo is not None else UserRepository(session)
+        self.time_service = time_service if time_service is not None else TimeService(session)
     
     async def create_booking(
         self,

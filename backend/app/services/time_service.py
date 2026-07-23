@@ -31,16 +31,28 @@ class TimeSlot:
 class TimeService:
     """Service for time-related operations and slot calculations (SRP)"""
     
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        booking_repo: Optional[BookingRepository] = None,
+        settings_repo: Optional[SettingsRepository] = None,
+    ):
         """
-        Initialize time service
-        
+        Initialize time service.
+
+        booking_repo/settings_repo default to the real implementation
+        (constructed from `session`) when not given, so existing call
+        sites (`TimeService(session)`) are unaffected. Tests can pass
+        fakes/mocks instead - see docs/REFACTORING_PLAN_2026-07.md, item 2.1.
+
         Args:
             session: Database session
+            booking_repo: Booking repository (defaults to BookingRepository(session))
+            settings_repo: Settings repository (defaults to SettingsRepository(session))
         """
         self.session = session
-        self.booking_repo = BookingRepository(session)
-        self.settings_repo = SettingsRepository(session)
+        self.booking_repo = booking_repo if booking_repo is not None else BookingRepository(session)
+        self.settings_repo = settings_repo if settings_repo is not None else SettingsRepository(session)
         # Cache for settings to avoid repeated DB queries within the same operation
         self._cached_settings: Optional[SystemSettings] = None
     
