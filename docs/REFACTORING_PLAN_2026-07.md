@@ -156,7 +156,7 @@ the slot should be available", строки 285-286) не соответству
 
 ---
 
-### 0.3 Нет проверки роли ADMIN в админ-хендлерах
+### 0.3 Нет проверки роли ADMIN в админ-хендлерах — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `AuthMiddleware` (`middlewares/auth.py`) проверяет только
 `auth_service.is_authorized(user.id)` — а это (`auth_service.py:97-115`)
@@ -191,6 +191,26 @@ the slot should be available", строки 285-286) не соответству
 
 **DoD.** Тест: не-админ вызывает любой admin-callback → получает отказ,
 никакие данные не меняются. Админ — работает как раньше.
+
+**Как исправлено фактически.** Реализован именно вариант из плана (единая
+точка на роутере, Facade-подход):
+- Новый `backend/app/bot/middlewares/admin_auth.py` — `AdminAuthMiddleware`
+  проверяет `data["user"].role == UserRole.ADMIN` (пользователь уже
+  подгружен глобальным `AuthMiddleware` к этому моменту, повторный запрос
+  к БД не нужен). При отказе — тот же текст/UX, что и у "неавторизован" в
+  `AuthMiddleware` (`start.unauthorized_both`), чтобы не давать
+  атакующему различить два случая.
+- `backend/app/bot/handlers/admin/__init__.py` — `AdminAuthMiddleware`
+  навешана на сам `admin.router` (`router.message.middleware(...)`,
+  `router.callback_query.middleware(...)`) **до** `include_router` для
+  `users`/`mechanics`/`services`/`settings` — благодаря дереву роутеров
+  aiogram это одна точка защиты для всех admin-подроутеров разом, без
+  правок в каждом хендлере.
+- Тесты: `backend/tests/test_admin_auth_middleware.py` (5 тестов) —
+  admin проходит, `MECHANIC`/`USER` блокируются (и для `Message`, и для
+  `CallbackQuery`, с проверкой, что ответ пользователю отправляется), а
+  также случай отсутствующего `user` в data. Полный набор: 70/70 тестов
+  проходит.
 
 ---
 
