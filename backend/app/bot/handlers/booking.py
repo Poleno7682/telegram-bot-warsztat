@@ -390,6 +390,7 @@ async def _create_booking_and_respond(
     send_translating_message: Callable[[], Awaitable[TelegramMessage]],
     show_result: Callable[[str], Awaitable[Any]],
     answer: Callable[[str], Awaitable[Any]],
+    chat_id: int,
 ) -> None:
     """Shared tail of the booking-creation flow, used by both
     skip_description and description_entered (they used to duplicate this
@@ -436,6 +437,7 @@ async def _create_booking_and_respond(
         details = format_booking_details(booking, language, _)
         await show_result(details)
         await answer(_("booking.confirm.success"))
+        schedule_main_menu_return(bot, chat_id, user)
     else:
         await show_result(_("booking.confirm.error") + f"\n{msg}")
 
@@ -468,6 +470,7 @@ async def skip_description(
         send_translating_message=lambda: message.answer(_("booking.create.translating")),
         show_result=message.edit_text,
         answer=message.answer,
+        chat_id=message.chat.id,
     )
     await safe_callback_answer(callback)
 
@@ -496,6 +499,7 @@ async def description_entered(
         send_translating_message=lambda: message.answer(_("booking.create.translating")),
         show_result=message.answer,
         answer=message.answer,
+        chat_id=message.chat.id,
     )
 
 
