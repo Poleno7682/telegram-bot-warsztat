@@ -2,6 +2,7 @@
 
 from typing import AsyncGenerator
 from pathlib import Path
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine,
@@ -41,6 +42,28 @@ engine: AsyncEngine = create_async_engine(
     pool_pre_ping=True,
     poolclass=NullPool if "sqlite" in database_url else AsyncAdaptedQueuePool,
 )
+
+def enable_sqlite_foreign_keys(target_engine: AsyncEngine) -> None:
+    """
+    Make SQLite enforce foreign keys (it doesn't by default, unlike
+    PostgreSQL - used in production, see docker-compose.yml). Without
+    this, ondelete=CASCADE/RESTRICT/SET NULL on Booking's FKs is silently
+    a no-op under SQLite, so an integrity bug there would go unnoticed in
+    dev/tests until it hits production.
+
+    Split out from module-level setup so tests can apply the exact same
+    pragma to their own throwaway SQLite engines and verify it actually
+    enforces constraints - see tests/test_database_sqlite_pragma.py.
+    """
+    @event.listens_for(target_engine.sync_engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
+if "sqlite" in database_url:
+    enable_sqlite_foreign_keys(engine)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(

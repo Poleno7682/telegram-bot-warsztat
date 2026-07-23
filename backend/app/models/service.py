@@ -1,5 +1,6 @@
 """Service model"""
 
+from decimal import Decimal
 from typing import List, Optional
 from sqlalchemy import String, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,8 +29,11 @@ class Service(Base, TimestampMixin):
     # Duration in minutes
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     
-    # Price (optional)
-    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+    # Price (optional). Numeric(10, 2) round-trips through SQLAlchemy as
+    # Decimal, not float - the annotation used to claim float, which
+    # would have been wrong the moment any arithmetic/formatting code
+    # started using this field.
+    price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     
     # Active status
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

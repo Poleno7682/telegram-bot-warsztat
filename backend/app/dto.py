@@ -13,6 +13,7 @@ import from the other's package.
 """
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Optional
 
 
@@ -22,7 +23,7 @@ class ServiceCreateData:
     name_pl: str
     name_ru: str
     duration_minutes: int
-    price: Optional[float] = None
+    price: Optional[Decimal] = None
     description_pl: Optional[str] = None
     description_ru: Optional[str] = None
 
@@ -35,6 +36,6 @@ class ServiceUpdateData:
     name_pl: Optional[str] = None
     name_ru: Optional[str] = None
     duration_minutes: Optional[int] = None
-    price: Optional[float] = None
+    price: Optional[Decimal] = None
     description_pl: Optional[str] = None
     description_ru: Optional[str] = None
