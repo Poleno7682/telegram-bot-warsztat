@@ -23,12 +23,9 @@ def to_utc(dt: datetime, timezone: Optional[str] = None) -> datetime:
     """
     if dt.tzinfo is None:
         # Naive datetime - assume it's in the specified timezone
-        if timezone is None:
-            settings = get_settings()
-            timezone = settings.timezone
-        tz = pytz.timezone(timezone)
+        tz = pytz.timezone(timezone) if timezone else get_local_timezone()
         dt = tz.localize(dt)
-    
+
     # Convert to UTC
     return dt.astimezone(pytz.UTC)
 
@@ -47,12 +44,8 @@ def from_utc(dt: datetime, timezone: Optional[str] = None) -> datetime:
     if dt.tzinfo is None:
         # Assume it's already UTC if naive
         dt = pytz.UTC.localize(dt)
-    
-    if timezone is None:
-        settings = get_settings()
-        timezone = settings.timezone
-    
-    target_tz = pytz.timezone(timezone)
+
+    target_tz = pytz.timezone(timezone) if timezone else get_local_timezone()
     return dt.astimezone(target_tz)
 
 
@@ -123,12 +116,31 @@ def get_local_timezone() -> pytz.BaseTzInfo:
         >>> dt = tz.localize(datetime.now())
     """
     global _timezone_cache
-    
+
     if _timezone_cache is None:
+        # Fallback for callers running before set_local_timezone() has been
+        # called from the DB (e.g. very early startup, tests). Once the DB
+        # value is loaded, it takes over as the source of truth.
         settings = get_settings()
         _timezone_cache = pytz.timezone(settings.timezone)
-    
+
     return _timezone_cache
+
+
+def set_local_timezone(timezone_name: str) -> None:
+    """
+    Explicitly set the active local timezone, overriding the cache.
+
+    Called once at startup after SystemSettings (the database - the
+    source of truth for this value) has been loaded, so all conversions
+    in this module reflect the admin-configured timezone rather than the
+    static .env default.
+
+    Args:
+        timezone_name: IANA timezone name (e.g. 'Europe/Warsaw')
+    """
+    global _timezone_cache
+    _timezone_cache = pytz.timezone(timezone_name)
 
 
 def normalize_to_local(dt: datetime) -> datetime:

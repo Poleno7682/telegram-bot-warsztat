@@ -34,13 +34,20 @@ class Settings(BaseSettings):
     # User Configuration
     user_ids: str = Field(default="", alias="USER_IDS")
     
-    # Default Settings
+    # Bootstrap defaults for SystemSettings (database).
+    # These are only read once, to seed the SystemSettings row the first
+    # time the bot starts against an empty database (see
+    # SettingsRepository.create_default_settings). After that, the
+    # database is the source of truth and these values are ignored -
+    # admins change work hours/time step/buffer time via the bot, not .env.
     default_work_start: str = Field(default="08:00", alias="DEFAULT_WORK_START")
     default_work_end: str = Field(default="16:00", alias="DEFAULT_WORK_END")
     default_time_step: int = Field(default=10, alias="DEFAULT_TIME_STEP")
     default_buffer_time: int = Field(default=15, alias="DEFAULT_BUFFER_TIME")
-    
-    # Timezone
+
+    # Timezone bootstrap default (see note above) and fallback used before
+    # app.core.timezone_utils.set_local_timezone() is called from the DB
+    # value at startup.
     timezone: str = Field(default="Europe/Warsaw", alias="TIMEZONE")
     
     # Supported Languages

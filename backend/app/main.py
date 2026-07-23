@@ -48,19 +48,27 @@ async def on_startup(bot: Bot):
         logger.error("Failed to initialize database", error=str(e), exc_info=True)
         raise
     
-    # Sync system settings with .env file values on startup
+    # Load system settings from the database (seeded from .env only on
+    # first run - see SettingsRepository.create_default_settings) and warm
+    # up the process-wide timezone cache so it reflects the DB value.
     try:
         from app.config.database import AsyncSessionLocal
         from app.repositories.settings import SettingsRepository
-        
+        from app.core.timezone_utils import set_local_timezone
+
         async with AsyncSessionLocal() as session:
             settings_repo = SettingsRepository(session)
-            await settings_repo.get_settings(sync_with_env=True)
+            system_settings = await settings_repo.get_settings()
             await session.commit()
-            logger.info("System settings synced with .env file")
+            set_local_timezone(system_settings.timezone)
+            logger.info(
+                "System settings loaded from database",
+                timezone=system_settings.timezone,
+            )
     except Exception as e:
-        logger.warning("Failed to sync settings with .env", error=str(e), exc_info=True)
-        # Don't fail startup if settings sync fails
+        logger.warning("Failed to load system settings from database", error=str(e), exc_info=True)
+        # Don't fail startup - services fall back to per-call DB reads /
+        # the static .env timezone default if this warm-up step fails.
     
     # Get bot info
     bot_info = await bot.get_me()

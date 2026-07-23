@@ -15,13 +15,15 @@ class SettingsRepository(BaseRepository[SystemSettings]):
     def __init__(self, session: AsyncSession):
         super().__init__(SystemSettings, session)
     
-    async def get_settings(self, sync_with_env: bool = False) -> SystemSettings:
+    async def get_settings(self) -> SystemSettings:
         """
-        Get system settings (singleton)
-        
-        Args:
-            sync_with_env: If True, syncs with .env file values (used on startup)
-        
+        Get system settings (singleton).
+
+        The database row is the single source of truth once it exists.
+        It is seeded from .env defaults only the first time it's created
+        (see create_default_settings) and is never overwritten from .env
+        afterwards.
+
         Returns:
             System settings instance
         """
@@ -29,55 +31,21 @@ class SettingsRepository(BaseRepository[SystemSettings]):
             select(SystemSettings).where(SystemSettings.id == 1)
         )
         settings = result.scalar_one_or_none()
-        
+
         if not settings:
             # Create default settings if not exists
             settings = await self.create_default_settings()
-        elif sync_with_env:
-            # Sync with .env file values (only when explicitly requested, e.g., on startup)
-            await self.sync_with_env(settings)
-        
+
         return settings
-    
-    async def sync_with_env(self, settings: SystemSettings) -> SystemSettings:
-        """
-        Sync settings with values from .env file
-        
-        Args:
-            settings: Existing settings instance
-            
-        Returns:
-            Updated settings instance
-        """
-        # Get default values from .env file
-        from app.config.settings import get_settings
-        env_settings = get_settings()
-        
-        # Parse work start/end times from .env (format: "HH:MM")
-        def parse_time(time_str: str) -> time:
-            """Parse time string in format HH:MM"""
-            parts = time_str.split(":")
-            return time(int(parts[0]), int(parts[1]))
-        
-        work_start = parse_time(env_settings.default_work_start)
-        work_end = parse_time(env_settings.default_work_end)
-        
-        # Update settings from .env
-        settings.work_start_time = work_start
-        settings.work_end_time = work_end
-        settings.time_step_minutes = env_settings.default_time_step
-        settings.buffer_time_minutes = env_settings.default_buffer_time
-        settings.timezone = env_settings.timezone
-        # booking_days_ahead doesn't have a .env default, keep existing value
-        
-        await self.session.flush()
-        await self.session.refresh(settings)
-        return settings
-    
+
     async def create_default_settings(self) -> SystemSettings:
         """
-        Create default system settings using values from .env file
-        
+        Create default system settings, seeded from .env values.
+
+        This only ever runs once, when the singleton row doesn't exist yet
+        (e.g. first deployment). After that, admin edits stay in the
+        database and .env is no longer consulted.
+
         Returns:
             Created settings
         """
@@ -151,9 +119,9 @@ class SettingsRepository(BaseRepository[SystemSettings]):
         """
         settings = await self.get_settings()
         
-        if time_step_minutes:
+        if time_step_minutes is not None:
             settings.time_step_minutes = time_step_minutes
-        if buffer_time_minutes:
+        if buffer_time_minutes is not None:
             settings.buffer_time_minutes = buffer_time_minutes
         
         await self.session.flush()
