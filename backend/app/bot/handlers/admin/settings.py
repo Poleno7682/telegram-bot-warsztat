@@ -10,10 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.handlers.common import safe_callback_answer, send_clean_menu, schedule_main_menu_return
 from app.bot.keyboards.inline import get_cancel_keyboard, get_settings_keyboard
 from app.bot.states.booking import SettingsStates
+from app.core.logging_config import get_logger
 from app.services.settings_management_service import SettingsManagementService
 from app.models.user import User
 
 router = Router(name="admin-settings")
+logger = get_logger(__name__)
 
 
 @router.callback_query(F.data == "admin:settings")
@@ -97,6 +99,11 @@ async def work_end_entered(
 
     try:
         work_end = datetime.strptime(message.text.strip(), "%H:%M").time()
+    except ValueError:
+        await message.answer(_("settings.invalid_time"))
+        return
+
+    try:
         data = await state.get_data()
 
         settings_mgmt = SettingsManagementService(session)
@@ -105,13 +112,16 @@ async def work_end_entered(
             end_time=work_end
         )
         await message.answer(_("settings.settings_updated"))
+    except Exception as e:
+        logger.error("Failed to update work hours", error=str(e), exc_info=True)
+        await message.answer(_("errors.unknown"))
+    finally:
+        # Always leave the FSM state, even on an unexpected (non-ValueError)
+        # failure - otherwise the user is stuck waiting for a time input
+        # forever with no way out.
         await state.clear()
-        
-        # Return to main menu
         if message.bot:
             schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
-    except ValueError:
-        await message.answer(_("settings.invalid_time"))
 
 
 @router.callback_query(F.data == "settings:time_step")
@@ -147,17 +157,21 @@ async def time_step_entered(
         time_step = int(message.text.strip())
         if time_step <= 0:
             raise ValueError()
+    except ValueError:
+        await message.answer(_("errors.invalid_input"))
+        return
 
+    try:
         settings_mgmt = SettingsManagementService(session)
         await settings_mgmt.update_time_step(time_step)
         await message.answer(_("settings.settings_updated"))
+    except Exception as e:
+        logger.error("Failed to update time step", error=str(e), exc_info=True)
+        await message.answer(_("errors.unknown"))
+    finally:
         await state.clear()
-        
-        # Return to main menu
         if message.bot:
             schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
-    except ValueError:
-        await message.answer(_("errors.invalid_input"))
 
 
 @router.callback_query(F.data == "settings:buffer_time")
@@ -193,15 +207,19 @@ async def buffer_time_entered(
         buffer_time = int(message.text.strip())
         if buffer_time < 0:
             raise ValueError()
+    except ValueError:
+        await message.answer(_("errors.invalid_input"))
+        return
 
+    try:
         settings_mgmt = SettingsManagementService(session)
         await settings_mgmt.update_buffer_time(buffer_time)
         await message.answer(_("settings.settings_updated"))
+    except Exception as e:
+        logger.error("Failed to update buffer time", error=str(e), exc_info=True)
+        await message.answer(_("errors.unknown"))
+    finally:
         await state.clear()
-        
-        # Return to main menu
         if message.bot:
             schedule_main_menu_return(message.bot, message.chat.id, user, delay=2.0)
-    except ValueError:
-        await message.answer(_("errors.invalid_input"))
 
