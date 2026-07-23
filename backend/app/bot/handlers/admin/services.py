@@ -15,6 +15,7 @@ from app.bot.keyboards.inline import (
     get_service_management_keyboard,
 )
 from app.bot.states.booking import AddServiceStates
+from app.dto import ServiceCreateData
 from app.models.user import User
 from app.services.service_management_service import ServiceManagementService
 
@@ -240,9 +241,11 @@ async def service_duration_entered(
 
     service_mgmt = ServiceManagementService(session)
     service = await service_mgmt.create_service(
-        name_pl=data["name_pl"],
-        name_ru=data["name_ru"],
-        duration_minutes=duration,
+        ServiceCreateData(
+            name_pl=data["name_pl"],
+            name_ru=data["name_ru"],
+            duration_minutes=duration,
+        )
     )
 
     if service:

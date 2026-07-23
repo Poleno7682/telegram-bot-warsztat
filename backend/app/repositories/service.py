@@ -1,10 +1,12 @@
 """Service repository"""
 
+from dataclasses import asdict
 from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.service import Service
+from app.dto import ServiceCreateData, ServiceUpdateData
 from .base import BaseRepository
 
 
@@ -47,80 +49,42 @@ class ServiceRepository(BaseRepository[Service]):
         )
         return result.scalar_one_or_none()
     
-    async def create_service(
-        self,
-        name_pl: str,
-        name_ru: str,
-        duration_minutes: int,
-        price: Optional[float] = None,
-        description_pl: Optional[str] = None,
-        description_ru: Optional[str] = None
-    ) -> Service:
+    async def create_service(self, data: ServiceCreateData) -> Service:
         """
         Create new service
-        
+
         Args:
-            name_pl: Service name in Polish
-            name_ru: Service name in Russian
-            duration_minutes: Service duration in minutes
-            price: Service price (optional)
-            description_pl: Description in Polish (optional)
-            description_ru: Description in Russian (optional)
-            
+            data: Fields for the new service
+
         Returns:
             Created service
         """
-        return await self.create(
-            name_pl=name_pl,
-            name_ru=name_ru,
-            duration_minutes=duration_minutes,
-            price=price,
-            description_pl=description_pl,
-            description_ru=description_ru
-        )
-    
+        return await self.create(**asdict(data))
+
     async def update_service(
         self,
         service_id: int,
-        name_pl: Optional[str] = None,
-        name_ru: Optional[str] = None,
-        duration_minutes: Optional[int] = None,
-        price: Optional[float] = None,
-        description_pl: Optional[str] = None,
-        description_ru: Optional[str] = None
+        data: ServiceUpdateData
     ) -> Optional[Service]:
         """
-        Update service
-        
+        Update service. Fields left as None on `data` are unchanged
+        (partial update).
+
         Args:
             service_id: Service ID
-            name_pl: Service name in Polish
-            name_ru: Service name in Russian
-            duration_minutes: Service duration in minutes
-            price: Service price
-            description_pl: Description in Polish
-            description_ru: Description in Russian
-            
+            data: Fields to update
+
         Returns:
             Updated service or None if not found
         """
         service = await self.get_by_id(service_id)
         if not service:
             return None
-        
-        if name_pl is not None:
-            service.name_pl = name_pl
-        if name_ru is not None:
-            service.name_ru = name_ru
-        if duration_minutes is not None:
-            service.duration_minutes = duration_minutes
-        if price is not None:
-            service.price = price
-        if description_pl is not None:
-            service.description_pl = description_pl
-        if description_ru is not None:
-            service.description_ru = description_ru
-        
+
+        for field, value in asdict(data).items():
+            if value is not None:
+                setattr(service, field, value)
+
         await self.session.flush()
         await self.session.refresh(service)
         return service

@@ -4,6 +4,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.service import Service
+from app.dto import ServiceCreateData, ServiceUpdateData
 from app.repositories.service import ServiceRepository
 
 
@@ -41,75 +42,36 @@ class ServiceManagementService:
         """
         return await self.service_repo.get_by_id(service_id)
     
-    async def create_service(
-        self,
-        name_pl: str,
-        name_ru: str,
-        duration_minutes: int,
-        price: Optional[float] = None,
-        description_pl: Optional[str] = None,
-        description_ru: Optional[str] = None
-    ) -> Service:
+    async def create_service(self, data: ServiceCreateData) -> Service:
         """
         Create new service
-        
+
         Args:
-            name_pl: Service name in Polish
-            name_ru: Service name in Russian
-            duration_minutes: Service duration in minutes
-            price: Service price (optional)
-            description_pl: Description in Polish (optional)
-            description_ru: Description in Russian (optional)
-            
+            data: Fields for the new service
+
         Returns:
             Created service
         """
-        service = await self.service_repo.create(
-            name_pl=name_pl,
-            name_ru=name_ru,
-            duration_minutes=duration_minutes,
-            price=price,
-            description_pl=description_pl,
-            description_ru=description_ru,
-            is_active=True
-        )
+        service = await self.service_repo.create_service(data)
         await self.session.commit()
         return service
-    
+
     async def update_service(
         self,
         service_id: int,
-        name_pl: Optional[str] = None,
-        name_ru: Optional[str] = None,
-        duration_minutes: Optional[int] = None,
-        price: Optional[float] = None,
-        description_pl: Optional[str] = None,
-        description_ru: Optional[str] = None
+        data: ServiceUpdateData
     ) -> Optional[Service]:
         """
-        Update service
-        
+        Update service. Fields left as None on `data` are unchanged.
+
         Args:
             service_id: Service ID
-            name_pl: Service name in Polish
-            name_ru: Service name in Russian
-            duration_minutes: Service duration in minutes
-            price: Service price
-            description_pl: Description in Polish
-            description_ru: Description in Russian
-            
+            data: Fields to update
+
         Returns:
             Updated service or None if not found
         """
-        service = await self.service_repo.update_service(
-            service_id=service_id,
-            name_pl=name_pl,
-            name_ru=name_ru,
-            duration_minutes=duration_minutes,
-            price=price,
-            description_pl=description_pl,
-            description_ru=description_ru
-        )
+        service = await self.service_repo.update_service(service_id, data)
         if service:
             await self.session.commit()
         return service
