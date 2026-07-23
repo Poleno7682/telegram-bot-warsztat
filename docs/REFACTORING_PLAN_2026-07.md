@@ -105,7 +105,7 @@
 
 ---
 
-### 0.2 Перенос времени брони: собственный слот всегда "занят"
+### 0.2 Перенос времени брони: собственный слот всегда "занят" — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `time_service.py:228-290`, метод `is_slot_available(...,
 exclude_booking_id=...)`. Параметр `exclude_booking_id` передаётся в
@@ -140,6 +140,19 @@ the slot should be available", строки 285-286) не соответству
 день; вызвать `is_slot_available(10:15, duration=30, exclude_booking_id=A.id)`
 → `True` (раньше было `False`); без `exclude_booking_id` — по-прежнему
 `False`.
+
+**Как исправлено фактически.**
+- `backend/app/services/time_service.py` — `calculate_available_slots` теперь
+  принимает `exclude_booking_id: Optional[int] = None` и пропускает бронь с
+  этим id при построении списка занятых интервалов.
+- `is_slot_available` прокидывает `exclude_booking_id` в
+  `calculate_available_slots` вместо того, чтобы просто проверять
+  флаг-заглушку в конце. Убран вводящий в заблуждение
+  комментарий/мёртвая ветка кода.
+- Тесты: `backend/tests/test_time_service.py` (3 новых теста) —
+  собственный слот брони недоступен без `exclude_booking_id`, доступен с
+  ним, и исключение одной брони не открывает слот другой. Полный набор:
+  65/65 тестов проходит.
 
 ---
 

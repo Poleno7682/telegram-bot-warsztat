@@ -129,16 +129,20 @@ class TimeService:
     async def calculate_available_slots(
         self,
         target_date: date,
-        service_duration: int
+        service_duration: int,
+        exclude_booking_id: Optional[int] = None
     ) -> List[datetime]:
         """
         Calculate all available time slots for a given date and service.
         For today's date, only shows slots starting from current time.
-        
+
         Args:
             target_date: Target date
             service_duration: Service duration in minutes
-            
+            exclude_booking_id: Booking ID to exclude when computing occupied
+                slots (used when rescheduling a booking, so it doesn't
+                block its own current time slot)
+
         Returns:
             List of available datetime slots (in local timezone)
         """
@@ -186,6 +190,9 @@ class TimeService:
         # Create occupied slots from existing bookings
         occupied_slots = []
         for booking in existing_bookings:
+            if exclude_booking_id is not None and booking.id == exclude_booking_id:
+                continue
+
             # Ensure booking_date is timezone-aware and in local timezone
             booking_start_local = normalize_to_local(booking.booking_date)
             
@@ -249,7 +256,9 @@ class TimeService:
         target_date = target_datetime_local.date()
         
         # Get available slots for this date using the same logic
-        available_slots = await self.calculate_available_slots(target_date, service_duration)
+        available_slots = await self.calculate_available_slots(
+            target_date, service_duration, exclude_booking_id=exclude_booking_id
+        )
         
         # Normalize target_datetime to match the format of available_slots
         # (round to nearest time step, remove seconds and microseconds)
@@ -278,13 +287,6 @@ class TimeService:
             # Allow small tolerance for floating point errors
             time_diff = abs((target_normalized - slot_normalized).total_seconds())
             if time_diff < 1.0:  # Within 1 second (should be exact match)
-                # Found matching slot - if we need to exclude a booking, verify it doesn't conflict
-                if exclude_booking_id:
-                    # The slot is in available_slots, which means it's available
-                    # But we need to verify that excluding the booking doesn't make it unavailable
-                    # Since calculate_available_slots already accounts for all bookings,
-                    # and we're excluding one, the slot should be available
-                    return True
                 return True
         
         return False
