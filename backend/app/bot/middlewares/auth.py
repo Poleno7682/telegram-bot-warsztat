@@ -60,7 +60,15 @@ class AuthMiddleware(BaseMiddleware):
             if isinstance(event, Message):
                 await event.answer(message_text)
             elif isinstance(event, CallbackQuery):
-                await event.message.answer(message_text)
+                # event.message is Optional[Message | InaccessibleMessage].
+                # Both support .answer() (it only needs .chat.id, unlike
+                # .edit_text() which needs a real, editable Message - see
+                # edit_or_ignore in bot/handlers/common.py for that
+                # distinction) - but it can also be None (e.g. a callback
+                # from an inline-mode result with no underlying chat
+                # message), which has no .answer() at all.
+                if event.message is not None:
+                    await event.message.answer(message_text)
                 await event.answer()
             
             return None
