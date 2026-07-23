@@ -207,6 +207,55 @@ class TestAcceptRejectAndNotify:
         assert creator.telegram_id in notified_chat_ids
 
 
+class TestCancelBookingAndNotify:
+    async def test_creator_cancels_notifies_mechanic(
+        self, db_session, creator, mechanic, service, tomorrow_10am, bot
+    ):
+        booking = await make_booking(db_session, creator, service, tomorrow_10am)
+        workflow = BookingWorkflowService(db_session, bot)
+        await workflow.accept_and_notify(booking_id=booking.id, mechanic_telegram_id=mechanic.telegram_id)
+        bot.send_message.reset_mock()
+
+        cancelled, msg = await workflow.cancel_booking_and_notify(
+            booking_id=booking.id, actor_telegram_id=creator.telegram_id
+        )
+
+        assert cancelled is not None
+        assert cancelled.status == BookingStatus.CANCELLED
+        assert msg == "Booking cancelled"
+        bot.send_message.assert_awaited_once()
+        assert bot.send_message.await_args.args[0] == mechanic.telegram_id
+
+    async def test_mechanic_cancels_notifies_creator(
+        self, db_session, creator, mechanic, service, tomorrow_10am, bot
+    ):
+        booking = await make_booking(db_session, creator, service, tomorrow_10am)
+        workflow = BookingWorkflowService(db_session, bot)
+        await workflow.accept_and_notify(booking_id=booking.id, mechanic_telegram_id=mechanic.telegram_id)
+        bot.send_message.reset_mock()
+
+        cancelled, msg = await workflow.cancel_booking_and_notify(
+            booking_id=booking.id, actor_telegram_id=mechanic.telegram_id
+        )
+
+        assert cancelled is not None
+        assert cancelled.status == BookingStatus.CANCELLED
+        bot.send_message.assert_awaited_once()
+        assert bot.send_message.await_args.args[0] == creator.telegram_id
+
+    async def test_stranger_cannot_cancel(self, db_session, creator, mechanic, service, tomorrow_10am, bot):
+        booking = await make_booking(db_session, creator, service, tomorrow_10am)
+        workflow = BookingWorkflowService(db_session, bot)
+
+        cancelled, msg = await workflow.cancel_booking_and_notify(
+            booking_id=booking.id, actor_telegram_id=mechanic.telegram_id
+        )
+
+        assert cancelled is None
+        assert msg == "Unauthorized"
+        bot.send_message.assert_not_awaited()
+
+
 class TestProposeAndConfirmTimeAndNotify:
     async def test_mechanic_proposal_notifies_creator(
         self, db_session, creator, mechanic, service, tomorrow_10am, bot

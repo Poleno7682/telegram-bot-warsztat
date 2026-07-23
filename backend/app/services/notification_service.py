@@ -134,7 +134,23 @@ class NotificationService:
                     booking,
                     mechanic
                 )
-    
+
+    async def notify_booking_cancelled(self, booking: Booking, actor: User) -> None:
+        """
+        Notify the other party (whoever isn't the one who cancelled) that
+        a booking was cancelled.
+
+        Args:
+            booking: The now-cancelled booking
+            actor: Whoever cancelled it - creator, assigned mechanic, or admin
+        """
+        if booking.creator_id != actor.id:
+            await self._send_booking_cancelled_notification(booking.creator, booking, actor)
+            schedule_main_menu_return(self.bot, booking.creator.telegram_id, booking.creator, delay=3.0)
+
+        if booking.mechanic and booking.mechanic_id != actor.id:
+            await self._send_booking_cancelled_notification(booking.mechanic, booking, actor)
+
     async def notify_time_change_proposed(
         self,
         booking: Booking,
@@ -352,6 +368,28 @@ class NotificationService:
             "booking.notification.rejected",
             error_label="notification",
             mechanic_name=mechanic.full_name,
+            details=details_text,
+        )
+
+    async def _send_booking_cancelled_notification(
+        self,
+        user: User,
+        booking: Booking,
+        actor: User
+    ) -> None:
+        """Send booking cancelled notification"""
+        lang = get_user_language(user)
+
+        def _(key: str, **kwargs) -> str:
+            return get_text(key, lang, **kwargs)
+
+        details_text = format_booking_details(booking, lang, _)
+
+        await self._send_simple_notification(
+            user,
+            "booking.notification.cancelled",
+            error_label="cancellation notification",
+            actor_name=actor.full_name,
             details=details_text,
         )
 

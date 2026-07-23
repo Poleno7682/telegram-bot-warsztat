@@ -251,16 +251,54 @@ class TestCancelBooking:
         booking_service = BookingService(db_session)
         created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
 
-        success, msg = await booking_service.cancel_booking(created.id, creator.telegram_id)
+        cancelled, msg = await booking_service.cancel_booking(created.id, creator.telegram_id)
 
-        assert success is True
+        assert cancelled is not None
+        assert cancelled.status == BookingStatus.CANCELLED
         assert msg == "Booking cancelled"
 
-    async def test_stranger_cannot_cancel_booking(self, db_session, creator, mechanic, service, tomorrow_10am):
+    async def test_unassigned_mechanic_cannot_cancel_booking(self, db_session, creator, mechanic, service, tomorrow_10am):
         booking_service = BookingService(db_session)
         created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
 
-        success, msg = await booking_service.cancel_booking(created.id, mechanic.telegram_id)
+        cancelled, msg = await booking_service.cancel_booking(created.id, mechanic.telegram_id)
 
-        assert success is False
+        assert cancelled is None
         assert msg == "Unauthorized"
+
+    async def test_assigned_mechanic_can_cancel_booking(self, db_session, creator, mechanic, service, tomorrow_10am):
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+        accepted, _ = await booking_service.accept_booking(created.id, mechanic.telegram_id)
+        assert accepted is not None
+
+        cancelled, msg = await booking_service.cancel_booking(created.id, mechanic.telegram_id)
+
+        assert cancelled is not None
+        assert cancelled.status == BookingStatus.CANCELLED
+        assert msg == "Booking cancelled"
+
+    async def test_admin_can_cancel_any_booking(self, db_session, creator, service, tomorrow_10am):
+        admin = User(telegram_id=9009, first_name="Admin", role=UserRole.ADMIN, language="ru")
+        db_session.add(admin)
+        await db_session.commit()
+        await db_session.refresh(admin)
+
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+
+        cancelled, msg = await booking_service.cancel_booking(created.id, admin.telegram_id)
+
+        assert cancelled is not None
+        assert cancelled.status == BookingStatus.CANCELLED
+
+    async def test_cannot_cancel_already_cancelled_booking(self, db_session, creator, service, tomorrow_10am):
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+        first, _ = await booking_service.cancel_booking(created.id, creator.telegram_id)
+        assert first is not None
+
+        second, msg = await booking_service.cancel_booking(created.id, creator.telegram_id)
+
+        assert second is None
+        assert msg == "Booking is not in a cancellable state"

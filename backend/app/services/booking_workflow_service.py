@@ -131,3 +131,18 @@ class BookingWorkflowService:
             if mechanic:
                 await self.notification_service.notify_booking_rejected(booking, mechanic)
         return booking, msg
+
+    async def cancel_booking_and_notify(
+        self,
+        *,
+        booking_id: int,
+        actor_telegram_id: int,
+    ) -> Tuple[Optional[Booking], str]:
+        """Cancel a booking (creator/assigned mechanic/admin) and notify
+        whichever party isn't the one who cancelled it."""
+        booking, msg = await self.booking_service.cancel_booking(booking_id, actor_telegram_id)
+        if booking and self.notification_service:
+            actor = await self.booking_service.user_repo.get_by_telegram_id(actor_telegram_id)
+            if actor:
+                await self.notification_service.notify_booking_cancelled(booking, actor)
+        return booking, msg

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking, BookingStatus
 from app.models.service import Service
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.booking import BookingRepository
 from app.repositories.service import ServiceRepository
 from app.repositories.user import UserRepository
@@ -425,34 +425,50 @@ class BookingService:
         """
         return await self.booking_repo.get_with_relations(booking_id)
     
+    # Statuses from which a booking can still be cancelled. Once it's
+    # REJECTED/CANCELLED/COMPLETED there's nothing left to cancel.
+    CANCELLABLE_STATUSES = (
+        BookingStatus.PENDING,
+        BookingStatus.NEGOTIATING,
+        BookingStatus.ACCEPTED,
+    )
+
     async def cancel_booking(
         self,
         booking_id: int,
-        user_telegram_id: int
-    ) -> Tuple[bool, str]:
+        actor_telegram_id: int
+    ) -> Tuple[Optional[Booking], str]:
         """
-        Cancel booking
-        
+        Cancel a booking. Allowed for its creator, its assigned mechanic,
+        or an admin - not an arbitrary user.
+
         Args:
             booking_id: Booking ID
-            user_telegram_id: User's Telegram ID
-            
+            actor_telegram_id: Telegram ID of the user requesting the cancellation
+
         Returns:
-            Tuple of (success, message)
+            Tuple of (Booking, message) on success, or (None, error_message)
         """
-        # Get booking
         booking = await self.booking_repo.get_with_relations(booking_id)
         if not booking:
-            return False, "Booking not found"
-        
-        # Verify user is creator
-        user = await self.user_repo.get_by_telegram_id(user_telegram_id)
-        if not user or booking.creator_id != user.id:
-            return False, "Unauthorized"
-        
-        # Update status to cancelled
+            return None, "Booking not found"
+
+        actor = await self.user_repo.get_by_telegram_id(actor_telegram_id)
+        if not actor:
+            return None, "Unauthorized"
+
+        is_creator = booking.creator_id == actor.id
+        is_assigned_mechanic = booking.mechanic_id is not None and booking.mechanic_id == actor.id
+        is_admin = actor.role == UserRole.ADMIN
+        if not (is_creator or is_assigned_mechanic or is_admin):
+            return None, "Unauthorized"
+
+        if booking.status not in self.CANCELLABLE_STATUSES:
+            return None, "Booking is not in a cancellable state"
+
         await self.booking_repo.update_status(booking_id, BookingStatus.CANCELLED)
         await self.session.commit()
-        
-        return True, "Booking cancelled"
+
+        booking = await self.booking_repo.get_with_relations(booking_id)
+        return booking, "Booking cancelled"
 

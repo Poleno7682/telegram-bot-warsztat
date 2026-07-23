@@ -21,6 +21,9 @@ msgstr ""
 msgid "booking.actions.accept"
 msgstr "✅ Akceptuj"
 
+msgid "booking.actions.cancel_booking"
+msgstr "❌ Anuluj"
+
 msgid "booking.actions.change_time"
 msgstr "⏰ Zmień termin"
 
@@ -32,6 +35,18 @@ msgstr "🔄 Zaproponuj nowy termin"
 
 msgid "booking.actions.reject"
 msgstr "❌ Odrzuć"
+
+msgid "booking.cancel.confirm_prompt"
+msgstr ""
+"⚠️ Czy na pewno chcesz anulować tę rezerwację?\n"
+"\n"
+"{details}"
+
+msgid "booking.cancel.error"
+msgstr "❌ Nie udało się anulować rezerwacji."
+
+msgid "booking.cancel.success"
+msgstr "✅ Rezerwacja anulowana."
 
 msgid "booking.confirm.details"
 msgstr ""
@@ -140,6 +155,15 @@ msgstr ""
 
 msgid "booking.notification.accepted_mechanic"
 msgstr "✅ Запись принята"
+
+msgid "booking.notification.cancelled"
+msgstr ""
+"❌ Rezerwacja anulowana\n"
+"\n"
+"👤 Anulował(a): {actor_name}\n"
+"\n"
+"📋 Szczegóły:\n"
+"{details}"
 
 msgid "booking.notification.new_booking"
 msgstr ""

@@ -654,6 +654,8 @@ async def show_my_bookings(
     # Format bookings list
     text = _("booking.my_bookings.title") + "\n\n"
 
+    keyboard = InlineKeyboardBuilder()
+
     for booking in bookings:
         status_emoji = {
             BookingStatus.PENDING: "⏳",
@@ -661,7 +663,7 @@ async def show_my_bookings(
             BookingStatus.REJECTED: "❌",
             BookingStatus.CANCELLED: "🚫"
         }.get(booking.status, "❓")
-        
+
         text += f"{status_emoji} {DateFormatter.format_date(booking.booking_date, language)} "
         text += f"{DateFormatter.format_time(booking.booking_date)}\n"
         text += f"   🛠️ {booking.service.get_name(language)}\n"
@@ -669,8 +671,17 @@ async def show_my_bookings(
         if booking.status == BookingStatus.ACCEPTED and booking.mechanic:
             text += f"   🔧 {booking.mechanic.get_display_name()}\n"
         text += "\n"
-    
-    keyboard = InlineKeyboardBuilder()
+
+        if booking.status in BookingService.CANCELLABLE_STATUSES:
+            keyboard.row(
+                InlineKeyboardButton(
+                    text=f"{_('booking.actions.cancel_booking')} "
+                         f"{DateFormatter.format_date(booking.booking_date, language)} "
+                         f"{DateFormatter.format_time(booking.booking_date)}",
+                    callback_data=f"booking:cancel_ask:{booking.id}"
+                )
+            )
+
     keyboard.row(
         InlineKeyboardButton(
             text=_("common.back"),
@@ -682,5 +693,79 @@ async def show_my_bookings(
         text,
         reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
     )
+    await safe_callback_answer(callback)
+
+
+@router.callback_query(F.data.startswith("booking:cancel_ask:"))
+async def cancel_booking_ask(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str],
+    language: str
+):
+    """Ask for confirmation before cancelling an active booking."""
+    if not callback.data:
+        await safe_callback_answer(callback)
+        return
+
+    booking_id = parse_callback_data(callback.data, "booking:cancel_ask:", index=2)
+    if booking_id is None:
+        await safe_callback_answer(callback)
+        return
+
+    booking_service = BookingService(session)
+    booking = await booking_service.get_booking_details(booking_id)
+    if not booking:
+        await safe_callback_answer(callback)
+        return
+
+    details_text = format_booking_details(booking, language, _)
+
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(
+        InlineKeyboardButton(text=_("common.yes"), callback_data=f"booking:cancel_do:{booking_id}"),
+        # "menu:main" rather than "menu:my_bookings": this confirmation is
+        # shared by both the creator's and the mechanic's booking lists, and
+        # "main menu" is the one back-target valid for either.
+        InlineKeyboardButton(text=_("common.no"), callback_data="menu:main"),
+    )
+    await edit_or_ignore(
+        callback,
+        _("booking.cancel.confirm_prompt").format(details=details_text),
+        reply_markup=cast(InlineKeyboardMarkup, keyboard.as_markup())
+    )
+    await safe_callback_answer(callback)
+
+
+@router.callback_query(F.data.startswith("booking:cancel_do:"))
+async def cancel_booking_confirmed(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    user: User,
+    _: Callable[[str], str]
+):
+    """Execute a booking cancellation after the user confirmed it."""
+    if not callback.data:
+        await safe_callback_answer(callback)
+        return
+
+    booking_id = parse_callback_data(callback.data, "booking:cancel_do:", index=2)
+    if booking_id is None:
+        await safe_callback_answer(callback)
+        return
+
+    workflow = BookingWorkflowService(session, callback.bot)
+    booking, msg = await workflow.cancel_booking_and_notify(
+        booking_id=booking_id, actor_telegram_id=user.telegram_id
+    )
+
+    if booking:
+        await edit_or_ignore(callback, _("booking.cancel.success"))
+        if callback.bot and isinstance(callback.message, TelegramMessage):
+            schedule_main_menu_return(callback.bot, callback.message.chat.id, user)
+    else:
+        await edit_or_ignore(callback, _("booking.cancel.error") + f"\n{msg}")
+
     await safe_callback_answer(callback)
 

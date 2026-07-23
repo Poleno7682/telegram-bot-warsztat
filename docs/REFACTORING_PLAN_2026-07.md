@@ -277,7 +277,7 @@ the slot should be available", строки 285-286) не соответству
 
 ---
 
-### 0.5 Нет способа отменить подтверждённую бронь через бота
+### 0.5 Нет способа отменить подтверждённую бронь через бота — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `BookingService.cancel_booking` (`booking_service.py:428-457`)
 полностью реализован, но не вызывается ни из одного хендлера — только из
@@ -301,6 +301,43 @@ the slot should be available", строки 285-286) не соответству
 
 **DoD.** Клиент видит кнопку "Отменить" у своей активной брони, отмена меняет
 статус на `CANCELLED`, отправляет уведомление второй стороне.
+
+**Как исправлено фактически** (пункт 2.2 сделан вместе, как и рекомендовал
+план):
+- `backend/app/services/booking_service.py` — `cancel_booking` переписан:
+  теперь возвращает `Tuple[Optional[Booking], str]` (как остальные методы
+  workflow, а не отдельный `Tuple[bool, str]`), разрешает отмену создателю,
+  **назначенному мастеру** или **админу** (`UserRole.ADMIN`), и проверяет
+  `CANCELLABLE_STATUSES` (`PENDING`/`NEGOTIATING`/`ACCEPTED`) — нельзя
+  повторно отменить уже `CANCELLED`/`REJECTED`/`COMPLETED` бронь.
+- `backend/app/services/notification_service.py` — добавлен
+  `notify_booking_cancelled(booking, actor)`: уведомляет ту сторону,
+  которая не является инициатором отмены (создателя — если отменил мастер
+  или админ; мастера — если отменил создатель или админ, и мастер уже был
+  назначен).
+- `backend/app/services/booking_workflow_service.py` — добавлен
+  `cancel_booking_and_notify`, по образцу существующих `*_and_notify`,
+  закрывает пробел из п. 2.2 (facade теперь покрывает все 5 переходов
+  статуса, включая cancel).
+- `backend/app/bot/handlers/booking.py` — новые хендлеры
+  `booking:cancel_ask:{id}` (экран подтверждения с деталями брони и
+  кнопками Да/Нет) и `booking:cancel_do:{id}` (выполняет отмену через
+  facade). Кнопка "❌ Отменить {дата} {время}" добавлена в список
+  `menu:my_bookings` (создатель) для каждой брони в отменяемом статусе.
+- `backend/app/bot/handlers/mechanic.py` — та же кнопка добавлена в
+  `mechanic:my_bookings_day:*` (список подтверждённых броней мастера на
+  день) — переиспользует те же `booking:cancel_ask:`/`booking:cancel_do:`
+  хендлеры (permission-проверка всё равно происходит в сервисном слое).
+- Новые i18n-ключи (`ru`/`pl`): `booking.actions.cancel_booking`,
+  `booking.cancel.confirm_prompt`, `booking.cancel.success`,
+  `booking.cancel.error`, `booking.notification.cancelled`. Каталоги
+  перекомпилированы (`pybabel compile -d locales`).
+- Тесты: `test_booking_service.py::TestCancelBooking` расширен (мастер
+  может отменить назначенную бронь, админ может отменить любую, повторная
+  отмена отклоняется), `test_booking_workflow_service.py::TestCancelBookingAndNotify`
+  (3 новых теста: отмена создателем уведомляет мастера, отмена мастером
+  уведомляет создателя, посторонний не может отменить). Полный набор:
+  81/81 тестов проходит.
 
 ---
 
@@ -415,12 +452,15 @@ in-memory/фейковыми репозиториями без реальной 
 
 ---
 
-### 2.2 Facade-слой не покрывает cancel-workflow
+### 2.2 Facade-слой не покрывает cancel-workflow — ✅ ИСПРАВЛЕНО (2026-07-23, вместе с 0.5)
 
 Дублирует корневую причину пункта 0.5 — при реализации отмены брони сразу
 добавить её в `BookingWorkflowService` как `cancel_booking_and_notify`, чтобы
 facade-паттерн (единая точка "выполнить действие + разослать уведомления")
 не имел исключений для одного из пяти базовых переходов статуса.
+
+См. подробности реализации в п. 0.5 выше — `cancel_booking_and_notify`
+добавлен туда же, одним и тем же коммитом.
 
 ---
 

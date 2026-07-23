@@ -312,29 +312,37 @@ async def show_mechanic_bookings_day(
     # Format date header
     date_header = DateFormatter.format_date(target_date, language)
     text = f"📅 {date_header}\n\n"
-    
+
+    builder = InlineKeyboardBuilder()
+
     if not day_bookings:
         text += _("booking.my_bookings.no_bookings")
     else:
         # Sort bookings by time
         day_bookings_sorted = sorted(day_bookings, key=lambda b: b.booking_date)
-        
+
         for booking in day_bookings_sorted:
             text += f"🕐 {DateFormatter.format_time(booking.booking_date)}\n"
             text += f"🛠️ {booking.service.get_name(language)}\n"
             text += f"🚗 {booking.car_brand} {booking.car_model}\n"
             text += f"👤 {booking.client_name} 📞 {booking.client_phone}\n"
             text += "\n"
-    
-    # Create keyboard with back button
-    builder = InlineKeyboardBuilder()
+
+            builder.row(
+                InlineKeyboardButton(
+                    text=f"{_('booking.actions.cancel_booking')} {DateFormatter.format_time(booking.booking_date)}",
+                    callback_data=f"booking:cancel_ask:{booking.id}"
+                )
+            )
+
+    # Back button
     builder.row(
         InlineKeyboardButton(
             text=_("common.back"),
             callback_data="mechanic:my_bookings"
         )
     )
-    
+
     await edit_or_ignore(
         callback,
         text,
