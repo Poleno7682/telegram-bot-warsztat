@@ -211,6 +211,39 @@ class TestTimeNegotiation:
         assert result is None
         assert msg == "Unauthorized"
 
+    async def test_mechanic_cannot_propose_time_on_cancelled_booking(
+        self, db_session, creator, mechanic, service, tomorrow_10am
+    ):
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+        cancelled, _ = await booking_service.cancel_booking(created.id, creator.telegram_id)
+        assert cancelled is not None
+        new_time = tomorrow_10am + timedelta(hours=2)
+
+        result, msg = await booking_service.propose_new_time(created.id, mechanic.telegram_id, new_time)
+
+        assert result is None
+        assert msg == "Booking is not in a state that allows proposing a new time"
+        # Status must not have been resurrected back to NEGOTIATING.
+        untouched = await booking_service.get_booking_details(created.id)
+        assert untouched.status == BookingStatus.CANCELLED
+
+    async def test_creator_cannot_propose_time_on_rejected_booking(
+        self, db_session, creator, mechanic, service, tomorrow_10am
+    ):
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+        rejected, _ = await booking_service.reject_booking(created.id, mechanic.telegram_id)
+        assert rejected is not None
+        new_time = tomorrow_10am + timedelta(hours=2)
+
+        result, msg = await booking_service.propose_new_time_by_user(created.id, creator.telegram_id, new_time)
+
+        assert result is None
+        assert msg == "Booking is not in a state that allows proposing a new time"
+        untouched = await booking_service.get_booking_details(created.id)
+        assert untouched.status == BookingStatus.REJECTED
+
     async def test_creator_confirms_proposed_time(self, db_session, creator, mechanic, service, tomorrow_10am):
         booking_service = BookingService(db_session)
         created, _ = await make_booking(db_session, creator, service, tomorrow_10am)

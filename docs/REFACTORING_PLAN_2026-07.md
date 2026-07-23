@@ -343,7 +343,7 @@ the slot should be available", строки 285-286) не соответству
 
 ## Этап 1 (P1): Логические несоответствия
 
-### 1.1 `propose_new_time` / `propose_new_time_by_user` без проверки статуса брони
+### 1.1 `propose_new_time` / `propose_new_time_by_user` без проверки статуса брони — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `booking_service.py:269-374`. У `accept_booking`/
 `reject_booking` есть проверка `status != PENDING`, у
@@ -362,6 +362,23 @@ the slot should be available", строки 285-286) не соответству
 
 **DoD.** Тест: вызов `propose_new_time` на брони со статусом `CANCELLED` →
 ошибка, статус не меняется.
+
+**Как исправлено фактически.**
+- `backend/app/services/booking_service.py` — константа
+  `CANCELLABLE_STATUSES` (введённая в п. 0.5) переименована в
+  `ACTIVE_STATUSES` и поднята в начало класса — теперь она означает
+  "бронь ещё открыта" (можно и отменить, и предложить новое время), а не
+  только "можно отменить". Guard `if booking.status not in
+  self.ACTIVE_STATUSES: return None, "..."` добавлен в начало и
+  `propose_new_time`, и `propose_new_time_by_user`, сразу после проверки
+  прав, до проверки доступности слота.
+- `backend/app/bot/handlers/booking.py` — обновлена ссылка на
+  переименованную константу (`BookingService.ACTIVE_STATUSES`).
+- Тесты: `test_booking_service.py::TestTimeNegotiation` — 2 новых теста:
+  мастер не может предложить время на уже `CANCELLED` брони, создатель не
+  может предложить время на уже `REJECTED` брони; в обоих случаях статус
+  брони остаётся неизменным (не "воскресает" в `NEGOTIATING`). Полный
+  набор: 83/83 тестов проходит.
 
 ---
 

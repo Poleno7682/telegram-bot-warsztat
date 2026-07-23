@@ -21,7 +21,16 @@ logger = get_logger(__name__)
 
 class BookingService:
     """Service for handling booking operations (SRP)"""
-    
+
+    # Statuses in which a booking is still "open": time can still be
+    # (re)negotiated and the booking can still be cancelled. Once it's
+    # REJECTED/CANCELLED/COMPLETED, none of that applies anymore.
+    ACTIVE_STATUSES = (
+        BookingStatus.PENDING,
+        BookingStatus.NEGOTIATING,
+        BookingStatus.ACCEPTED,
+    )
+
     def __init__(self, session: AsyncSession):
         """
         Initialize booking service
@@ -292,20 +301,23 @@ class BookingService:
         booking = await self.booking_repo.get_with_relations(booking_id)
         if not booking:
             return None, "Booking not found"
-        
+
+        if booking.status not in self.ACTIVE_STATUSES:
+            return None, "Booking is not in a state that allows proposing a new time"
+
         # Ensure new_datetime is in local timezone
         new_datetime_local = ensure_local(new_datetime)
-        
+
         # Check if new time slot is available (use local timezone)
         is_available = await self.time_service.is_slot_available(
             new_datetime_local,
             booking.service.duration_minutes,
             exclude_booking_id=booking_id
         )
-        
+
         if not is_available:
             return None, "Proposed time slot is not available"
-        
+
         # Propose new time (store in local timezone)
         booking = await self.booking_repo.propose_new_time(
             booking_id,
@@ -349,20 +361,23 @@ class BookingService:
         # Verify creator
         if booking.creator_id != creator.id:
             return None, "Unauthorized"
-        
+
+        if booking.status not in self.ACTIVE_STATUSES:
+            return None, "Booking is not in a state that allows proposing a new time"
+
         # Ensure new_datetime is in local timezone
         new_datetime_local = ensure_local(new_datetime)
-        
+
         # Check if new time slot is available (use local timezone)
         is_available = await self.time_service.is_slot_available(
             new_datetime_local,
             booking.service.duration_minutes,
             exclude_booking_id=booking_id
         )
-        
+
         if not is_available:
             return None, "Proposed time slot is not available"
-        
+
         # Propose new time (set proposed_date, status to NEGOTIATING, store in local timezone)
         booking.proposed_date = new_datetime_local
         booking.status = BookingStatus.NEGOTIATING
@@ -424,14 +439,6 @@ class BookingService:
             Booking with relations or None
         """
         return await self.booking_repo.get_with_relations(booking_id)
-    
-    # Statuses from which a booking can still be cancelled. Once it's
-    # REJECTED/CANCELLED/COMPLETED there's nothing left to cancel.
-    CANCELLABLE_STATUSES = (
-        BookingStatus.PENDING,
-        BookingStatus.NEGOTIATING,
-        BookingStatus.ACCEPTED,
-    )
 
     async def cancel_booking(
         self,
@@ -463,7 +470,7 @@ class BookingService:
         if not (is_creator or is_assigned_mechanic or is_admin):
             return None, "Unauthorized"
 
-        if booking.status not in self.CANCELLABLE_STATUSES:
+        if booking.status not in self.ACTIVE_STATUSES:
             return None, "Booking is not in a cancellable state"
 
         await self.booking_repo.update_status(booking_id, BookingStatus.CANCELLED)

@@ -672,7 +672,7 @@ async def show_my_bookings(
             text += f"   🔧 {booking.mechanic.get_display_name()}\n"
         text += "\n"
 
-        if booking.status in BookingService.CANCELLABLE_STATUSES:
+        if booking.status in BookingService.ACTIVE_STATUSES:
             keyboard.row(
                 InlineKeyboardButton(
                     text=f"{_('booking.actions.cancel_booking')} "
