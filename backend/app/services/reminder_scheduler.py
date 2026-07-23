@@ -13,6 +13,7 @@ from app.repositories.booking import BookingRepository
 from app.services.notification_service import NotificationService
 from app.core.logging_config import get_logger
 from app.core.metrics import get_metrics_collector
+from app.core.timezone_utils import ensure_utc
 
 
 @dataclass(frozen=True)
@@ -156,7 +157,12 @@ class ReminderScheduler:
                         if not mechanic or not mechanic.is_active:
                             continue
                         
-                        delta = booking.booking_date - now
+                        # booking_date is stored as UTC, but some DB
+                        # drivers (e.g. SQLite/aiosqlite) return naive
+                        # datetimes on read - ensure_utc treats a naive
+                        # value as already-UTC rather than crashing on the
+                        # naive/aware subtraction below.
+                        delta = ensure_utc(booking.booking_date) - now
                         if delta.total_seconds() <= 0:
                             continue
                         
@@ -169,15 +175,26 @@ class ReminderScheduler:
                                 if not self._should_send(delta, rule.threshold):
                                     continue
                                 
-                                await notification_service.notify_mechanic_reminder(
+                                delivered = await notification_service.notify_mechanic_reminder(
                                     booking,
                                     mechanic,
                                     rule.label_key
                                 )
+                                if not delivered:
+                                    # Transient failure (rate limit, network,
+                                    # Telegram-side error) - leave sent_attr
+                                    # False so the next cycle retries.
+                                    self.logger.warning(
+                                        "Reminder not delivered, will retry next cycle",
+                                        booking_id=booking.id,
+                                        rule=rule.label_key,
+                                    )
+                                    continue
+
                                 setattr(booking, rule.sent_attr, True)
                                 updated = True
                                 reminders_sent += 1
-                                
+
                                 # Record metric
                                 metrics = get_metrics_collector()
                                 await metrics.increment("reminders.sent")

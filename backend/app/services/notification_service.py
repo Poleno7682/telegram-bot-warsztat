@@ -2,6 +2,7 @@
 
 from typing import Any, List, Optional
 from aiogram import Bot
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -202,7 +203,7 @@ class NotificationService:
         reply_markup: Optional[InlineKeyboardMarkup] = None,
         error_label: str = "notification",
         **format_kwargs: Any,
-    ) -> None:
+    ) -> bool:
         """
         Format `text_key` for recipient's language and send it, honoring the
         notification rate limit.
@@ -218,6 +219,15 @@ class NotificationService:
             reply_markup: Optional keyboard to attach
             error_label: Human-readable label used in warning/error logs
             **format_kwargs: Values to interpolate into the translated text
+
+        Returns:
+            True if the message was delivered, or the recipient is
+            permanently unreachable (blocked the bot / chat gone), so
+            retrying would never succeed. False if the send was skipped
+            (rate limit) or failed transiently (network, Telegram-side
+            error) - callers that track "was this sent" (e.g. reminder
+            scheduling) should treat False as "try again later", not as
+            delivered.
         """
         lang = get_user_language(recipient)
         notification = get_text(text_key, lang).format(**format_kwargs)
@@ -228,12 +238,19 @@ class NotificationService:
                     f"Rate limit exceeded for {recipient.telegram_id}, "
                     f"skipping {error_label}"
                 )
-                return
+                return False
 
             await self.bot.send_message(recipient.telegram_id, notification, reply_markup=reply_markup)
             await self.rate_limiter.record_message(recipient.telegram_id)
+            return True
+        except (TelegramForbiddenError, TelegramBadRequest) as e:
+            # Recipient blocked the bot / chat no longer exists - this will
+            # never succeed on retry, so treat it as "handled".
+            logger.warning(f"Recipient permanently unreachable for {error_label} to {recipient.telegram_id}: {e}")
+            return True
         except Exception as e:
             logger.error(f"Failed to send {error_label} to {recipient.telegram_id}: {e}")
+            return False
 
     async def _send_new_booking_notification(
         self,
@@ -270,8 +287,14 @@ class NotificationService:
         booking: Booking,
         mechanic: User,
         time_label_key: str
-    ) -> None:
-        """Send reminder notification to assigned mechanic"""
+    ) -> bool:
+        """
+        Send reminder notification to assigned mechanic.
+
+        Returns:
+            See _send_simple_notification - callers should only mark the
+            reminder as sent when this returns True.
+        """
         lang = get_user_language(mechanic)
         time_left = get_text(time_label_key, lang)
 
@@ -280,7 +303,7 @@ class NotificationService:
 
         details_text = format_booking_details(booking, lang, _)
 
-        await self._send_simple_notification(
+        return await self._send_simple_notification(
             mechanic,
             "booking.notification.reminder",
             error_label="reminder notification",

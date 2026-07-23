@@ -249,8 +249,11 @@ class TestNotifyMechanicReminder:
         accepted, _ = await booking_service.accept_booking(booking.id, mechanic.telegram_id)
         notification_service = NotificationService(db_session, bot)
 
-        await notification_service.notify_mechanic_reminder(accepted, mechanic, "booking.reminder.time_left_1h")
+        delivered = await notification_service.notify_mechanic_reminder(
+            accepted, mechanic, "booking.reminder.time_left_1h"
+        )
 
+        assert delivered is True
         bot.send_message.assert_awaited_once()
         assert bot.send_message.await_args.args[0] == mechanic.telegram_id
 
@@ -263,6 +266,41 @@ class TestNotifyMechanicReminder:
         notification_service = NotificationService(db_session, bot)
         monkeypatch.setattr(notification_service.rate_limiter, "is_allowed", AsyncMock(return_value=False))
 
-        await notification_service.notify_mechanic_reminder(accepted, mechanic, "booking.reminder.time_left_1h")
+        delivered = await notification_service.notify_mechanic_reminder(
+            accepted, mechanic, "booking.reminder.time_left_1h"
+        )
 
+        assert delivered is False
         bot.send_message.assert_not_awaited()
+
+    async def test_transient_send_failure_returns_false(
+        self, db_session, creator, mechanic, service, tomorrow_10am, bot
+    ):
+        booking_service = BookingService(db_session)
+        booking = await make_booking_with_relations(db_session, creator, service, tomorrow_10am)
+        accepted, _ = await booking_service.accept_booking(booking.id, mechanic.telegram_id)
+        notification_service = NotificationService(db_session, bot)
+        bot.send_message.side_effect = TimeoutError("network blip")
+
+        delivered = await notification_service.notify_mechanic_reminder(
+            accepted, mechanic, "booking.reminder.time_left_1h"
+        )
+
+        assert delivered is False
+
+    async def test_forbidden_send_failure_returns_true(
+        self, db_session, creator, mechanic, service, tomorrow_10am, bot
+    ):
+        from aiogram.exceptions import TelegramForbiddenError
+
+        booking_service = BookingService(db_session)
+        booking = await make_booking_with_relations(db_session, creator, service, tomorrow_10am)
+        accepted, _ = await booking_service.accept_booking(booking.id, mechanic.telegram_id)
+        notification_service = NotificationService(db_session, bot)
+        bot.send_message.side_effect = TelegramForbiddenError(method=None, message="bot was blocked by the user")
+
+        delivered = await notification_service.notify_mechanic_reminder(
+            accepted, mechanic, "booking.reminder.time_left_1h"
+        )
+
+        assert delivered is True

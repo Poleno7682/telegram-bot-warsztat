@@ -214,7 +214,7 @@ the slot should be available", строки 285-286) не соответству
 
 ---
 
-### 0.4 Напоминания помечаются "отправлено" даже при неудачной доставке
+### 0.4 Напоминания помечаются "отправлено" даже при неудачной доставке — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `notification_service.py:225-236`
 (`_send_simple_notification`) ловит все исключения при отправке сообщения
@@ -242,6 +242,38 @@ the slot should be available", строки 285-286) не соответству
 `sent_attr` становится `True` (не ретраим). Мок кидает
 `TelegramRetryAfter`/`TelegramNetworkError` → `sent_attr` остаётся `False`,
 и в следующем тике `reminder_scheduler` попытка повторяется.
+
+**Как исправлено фактически.**
+- `backend/app/services/notification_service.py` — `_send_simple_notification`
+  теперь возвращает `bool`: `True` при реальной доставке **или** при
+  `TelegramForbiddenError`/`TelegramBadRequest` (получатель безвозвратно
+  недоступен — ретраить бессмысленно), `False` при пропуске из-за
+  rate-limit или любой другой (временной) ошибке отправки.
+  `notify_mechanic_reminder` пробрасывает этот результат наружу.
+- `backend/app/services/reminder_scheduler.py` — `sent_attr` выставляется
+  в `True` только когда `notify_mechanic_reminder` вернул `True`; при
+  `False` бронь просто пропускается в этом цикле (следующий цикл
+  повторит попытку, т.к. флаг остался `False`).
+- Попутно найден и исправлен смежный баг, всплывший при тестировании:
+  `delta = booking.booking_date - now` падал с `TypeError: can't subtract
+  offset-naive and offset-aware datetimes`, когда БД возвращает
+  `booking_date` как naive datetime (это поведение SQLite/aiosqlite для
+  колонок `DateTime(timezone=True)`; на проде используется PostgreSQL, где
+  это не воспроизводится, но сам код не был защищён). Обёрнуто в
+  `ensure_utc(...)` — ровно то же соглашение ("naive = уже UTC"), что
+  используется в `timezone_utils` во всём остальном проекте.
+- Тесты:
+  - `backend/tests/test_notification_service.py` — добавлены
+    `test_transient_send_failure_returns_false` и
+    `test_forbidden_send_failure_returns_true` в
+    `TestNotifyMechanicReminder`, плюс существующие тесты обновлены на
+    проверку возвращаемого `bool`.
+  - `backend/tests/test_reminder_scheduler.py` (новый файл, 3 теста) —
+    полноценный интеграционный тест `ReminderScheduler._process_cycle`
+    с реальной (in-memory) БД: успешная доставка помечает `sent=True`,
+    временная ошибка оставляет `sent=False` (будет повтор), постоянная
+    (`TelegramForbiddenError`) помечает `sent=True` (не ретраим).
+  - Полный набор: 75/75 тестов проходит.
 
 ---
 
