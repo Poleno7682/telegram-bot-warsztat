@@ -36,18 +36,22 @@ def get_role_display_name(role: UserRole, _: Callable[[str], str]) -> str:
     return _(role_map.get(role, "user_settings.role_user"))
 
 
-def get_language_display_name(language: str | None) -> str:
+def get_language_display_name(language: str | None, translate: Callable[[str], str]) -> str:
     """
     Get language display name
-    
+
     Args:
         language: Language code (can be None or LANGUAGE_UNSET)
-        
+        translate: Translation function (i18n getter)
+
     Returns:
-        Language name or "Not set" message
+        Language name (shown in its own language - not translated, same as
+        any language picker), or the localized "not set" label via the
+        same "user_settings.language_not_set" i18n key already used at
+        this function's LANGUAGE_UNSET call site.
     """
     if not language or language == LANGUAGE_UNSET:
-        return "❌ Не установлен / Nie ustawiono"
+        return translate("user_settings.language_not_set")
     language_map = {
         "pl": "Polski 🇵🇱",
         "ru": "Русский 🇷🇺"
@@ -90,7 +94,7 @@ async def show_user_settings(
     # Get language display name
     # Use user's language or show "Not set" if unset
     if user.language and user.language != LANGUAGE_UNSET:
-        language_name = get_language_display_name(user.language)
+        language_name = get_language_display_name(user.language, _)
     else:
         language_name = _("user_settings.language_not_set")
     
@@ -153,7 +157,7 @@ async def change_language_process(
             return get_text(_key, language, **kwargs)
         
         # Get language name
-        language_name = get_language_display_name(language)
+        language_name = get_language_display_name(language, new_)
         
         # Show confirmation and return to user settings
         # Build full name from first_name and last_name
