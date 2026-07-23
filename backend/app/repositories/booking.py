@@ -317,23 +317,29 @@ class BookingRepository(BaseRepository[Booking]):
         self,
         booking_id: int,
         proposed_date: datetime,
-        mechanic_id: int
+        mechanic_id: Optional[int] = None
     ) -> Optional[Booking]:
         """
-        Propose new time for booking
-        
+        Propose new time for booking - used by both the mechanic-initiated
+        and creator-initiated negotiation flows, so the two don't drift
+        into separately-maintained update logic.
+
         Args:
             booking_id: Booking ID
             proposed_date: Proposed date and time
-            mechanic_id: Mechanic user ID
-            
+            mechanic_id: Mechanic user ID to assign. Pass this when the
+                mechanic is the one proposing (assigns/reassigns them to
+                the booking). Leave as None for a creator-initiated
+                proposal, which must not change who's assigned.
+
         Returns:
             Updated booking or None
         """
         booking = await self.get_by_id(booking_id)
         if booking:
             booking.proposed_date = proposed_date
-            booking.mechanic_id = mechanic_id
+            if mechanic_id is not None:
+                booking.mechanic_id = mechanic_id
             booking.status = BookingStatus.NEGOTIATING
             await self.session.flush()
             await self.session.refresh(booking)

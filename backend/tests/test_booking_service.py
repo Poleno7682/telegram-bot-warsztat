@@ -199,6 +199,26 @@ class TestTimeNegotiation:
         assert proposed.status == BookingStatus.NEGOTIATING
         assert msg == "New time proposed by user"
 
+    async def test_creator_proposal_does_not_change_assigned_mechanic(
+        self, db_session, creator, mechanic, service, tomorrow_10am
+    ):
+        """propose_new_time_by_user must not reassign booking.mechanic_id -
+        only the mechanic-initiated propose_new_time does that. Both flows
+        now share BookingRepository.propose_new_time; this pins down that
+        the shared method doesn't blur that distinction."""
+        booking_service = BookingService(db_session)
+        created, _ = await make_booking(db_session, creator, service, tomorrow_10am)
+        accepted, _ = await booking_service.accept_booking(created.id, mechanic.telegram_id)
+        assert accepted is not None
+        assert accepted.mechanic_id == mechanic.id
+        new_time = tomorrow_10am + timedelta(hours=2)
+
+        proposed, msg = await booking_service.propose_new_time_by_user(created.id, creator.telegram_id, new_time)
+
+        assert proposed is not None
+        assert proposed.status == BookingStatus.NEGOTIATING
+        assert proposed.mechanic_id == mechanic.id
+
     async def test_creator_cannot_propose_time_for_foreign_booking(
         self, db_session, creator, mechanic, service, tomorrow_10am
     ):

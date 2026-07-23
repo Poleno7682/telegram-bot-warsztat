@@ -382,7 +382,7 @@ the slot should be available", строки 285-286) не соответству
 
 ---
 
-### 1.2 Дублирование логики: перенос времени клиентом идёт мимо репозитория
+### 1.2 Дублирование логики: перенос времени клиентом идёт мимо репозитория — ✅ ИСПРАВЛЕНО (2026-07-23)
 
 **Проблема.** `propose_new_time_by_user` (`booking_service.py:366-369`)
 меняет `booking.proposed_date` / `booking.status` напрямую через ORM-объект.
@@ -402,6 +402,23 @@ the slot should be available", строки 285-286) не соответству
 **DoD.** Оба метода сервиса проходят через репозиторий; поведение
 (проставление `mechanic_id` и т.п.) явно задокументировано и одинаково
 предсказуемо для обоих сценариев.
+
+**Как исправлено фактически.**
+- `backend/app/repositories/booking.py` — `propose_new_time(booking_id,
+  proposed_date, mechanic_id)`: параметр `mechanic_id` стал
+  `Optional[int] = None`. Если передан — назначает/переназначает мастера
+  (путь мастера); если `None` — оставляет `mechanic_id` как есть (путь
+  клиента). Один метод, одно место обновления `proposed_date`/`status`
+  для обоих сценариев.
+- `backend/app/services/booking_service.py` —
+  `propose_new_time_by_user` больше не мутирует `booking.proposed_date`/
+  `booking.status` напрямую через ORM, а вызывает
+  `self.booking_repo.propose_new_time(booking_id, new_datetime_local)`
+  (без `mechanic_id`) — тот же путь, что и у `propose_new_time` (мастер).
+- Тест: `test_booking_service.py::test_creator_proposal_does_not_change_assigned_mechanic`
+  — закрепляет, что после объединения путей предложение времени
+  клиентом по-прежнему **не** переназначает `mechanic_id` уже
+  назначенного мастера. Полный набор: 84/84 тестов проходит.
 
 ---
 

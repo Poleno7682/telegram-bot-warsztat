@@ -378,14 +378,18 @@ class BookingService:
         if not is_available:
             return None, "Proposed time slot is not available"
 
-        # Propose new time (set proposed_date, status to NEGOTIATING, store in local timezone)
-        booking.proposed_date = new_datetime_local
-        booking.status = BookingStatus.NEGOTIATING
+        # Propose new time (store in local timezone). mechanic_id is left
+        # as None - a creator-initiated proposal must not (re)assign the
+        # mechanic, only the mechanic-initiated path in propose_new_time
+        # does that. Goes through the same repository method as that path
+        # instead of mutating the ORM object directly, so both proposal
+        # flows share one update path.
+        booking = await self.booking_repo.propose_new_time(booking_id, new_datetime_local)
         await self.session.commit()
-        
+
         # Load relations
         booking = await self.booking_repo.get_with_relations(booking_id)
-        
+
         return booking, "New time proposed by user"
     
     async def confirm_proposed_time(
