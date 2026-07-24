@@ -606,6 +606,15 @@ msgstr "👥 Список пользователей"
 msgid "user_settings.change_language"
 msgstr "🌐 Изменить язык"
 
+msgid "user_settings.clear_chat_button"
+msgstr "🧹 Очистить чат"
+
+msgid "user_settings.clear_chat_confirm"
+msgstr "⚠️ Удалить всю историю переписки с ботом? Это действие необратимо."
+
+msgid "user_settings.clear_chat_done"
+msgstr "✅ Чат очищен."
+
 msgid "user_settings.info"
 msgstr ""
 "📋 Информация о профиле:\n"

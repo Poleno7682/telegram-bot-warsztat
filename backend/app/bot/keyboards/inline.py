@@ -671,11 +671,17 @@ def get_user_settings_keyboard(
         )
     builder.row(
         InlineKeyboardButton(
+            text=_("user_settings.clear_chat_button"),
+            callback_data="user_settings:clear_chat_ask"
+        )
+    )
+    builder.row(
+        InlineKeyboardButton(
             text=_("common.back"),
             callback_data="menu:main"
         )
     )
-    
+
     return builder.as_markup()
 
 

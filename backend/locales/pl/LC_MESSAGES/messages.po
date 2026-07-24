@@ -606,6 +606,15 @@ msgstr "👥 Lista użytkowników"
 msgid "user_settings.change_language"
 msgstr "🌐 Zmień język"
 
+msgid "user_settings.clear_chat_button"
+msgstr "🧹 Wyczyść czat"
+
+msgid "user_settings.clear_chat_confirm"
+msgstr "⚠️ Usunąć całą historię czatu z botem? Tej operacji nie można cofnąć."
+
+msgid "user_settings.clear_chat_done"
+msgstr "✅ Czat wyczyszczony."
+
 msgid "user_settings.info"
 msgstr ""
 "📋 Informacje o profilu:\n"

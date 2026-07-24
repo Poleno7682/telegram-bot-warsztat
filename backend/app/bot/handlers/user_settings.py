@@ -2,7 +2,8 @@
 
 from typing import Callable
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardButton, Message as TelegramMessage
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole, LANGUAGE_UNSET
@@ -12,7 +13,8 @@ from app.bot.keyboards.inline import (
     get_language_keyboard,
     get_reminder_settings_keyboard
 )
-from app.bot.handlers.common import safe_callback_answer, send_clean_menu
+from app.bot.handlers.common import safe_callback_answer, send_clean_menu, edit_or_ignore
+from app.bot.ui.chat_cleaner import clear_chat_history
 
 router = Router(name="user_settings")
 
@@ -59,6 +61,38 @@ def get_language_display_name(language: str | None, translate: Callable[[str], s
     return language_map.get(language, language)
 
 
+def build_user_settings_text(user: User, _: Callable[[str], str]) -> str:
+    """Build the "⚙️ Настройки" info text (name, role, language).
+
+    Shared by show_user_settings, change_language_process, and
+    clear_chat_confirmed so all three render identical info instead of
+    drifting apart via copy-pasted formatting.
+    """
+    name_parts = []
+    if user.first_name:
+        name_parts.append(user.first_name)
+    if user.last_name:
+        name_parts.append(user.last_name)
+
+    # Get display name: full name → username → ID
+    username = " ".join(name_parts) if name_parts else (user.username or f"User{user.telegram_id}")
+
+    role_name = get_role_display_name(user.role, _)
+
+    # Use user's language or show "Not set" if unset
+    if user.language and user.language != LANGUAGE_UNSET:
+        language_name = get_language_display_name(user.language, _)
+    else:
+        language_name = _("user_settings.language_not_set")
+
+    return _("user_settings.info").format(
+        username=username,
+        user_id=user.telegram_id,
+        role=role_name,
+        language=language_name
+    )
+
+
 def get_reminder_status_text(user: User, _: Callable[[str], str]) -> str:
     """Build reminder settings text"""
     def fmt(enabled: bool) -> str:
@@ -78,34 +112,8 @@ async def show_user_settings(
     _: Callable[[str], str]
 ):
     """Show user settings menu"""
-    # Build full name from first_name and last_name
-    name_parts = []
-    if user.first_name:
-        name_parts.append(user.first_name)
-    if user.last_name:
-        name_parts.append(user.last_name)
-    
-    # Get display name: full name → username → ID
-    username = " ".join(name_parts) if name_parts else (user.username or f"User{user.telegram_id}")
-    
-    # Get role display name
-    role_name = get_role_display_name(user.role, _)
-    
-    # Get language display name
-    # Use user's language or show "Not set" if unset
-    if user.language and user.language != LANGUAGE_UNSET:
-        language_name = get_language_display_name(user.language, _)
-    else:
-        language_name = _("user_settings.language_not_set")
-    
-    # Format info text
-    text = _("user_settings.info").format(
-        username=username,
-        user_id=user.telegram_id,
-        role=role_name,
-        language=language_name
-    )
-    
+    text = build_user_settings_text(user, _)
+
     await send_clean_menu(
         callback=callback,
         text=text,
@@ -152,31 +160,12 @@ async def change_language_process(
     if updated_user:
         # Get updated translation function
         from app.core.i18n import get_text
-        
+
         def new_(_key: str, **kwargs) -> str:
             return get_text(_key, language, **kwargs)
-        
-        # Get language name
-        language_name = get_language_display_name(language, new_)
-        
-        # Show confirmation and return to user settings
-        # Build full name from first_name and last_name
-        name_parts = []
-        if updated_user.first_name:
-            name_parts.append(updated_user.first_name)
-        if updated_user.last_name:
-            name_parts.append(updated_user.last_name)
-        
-        username = " ".join(name_parts) if name_parts else (updated_user.username or f"User{updated_user.telegram_id}")
-        role_name = get_role_display_name(updated_user.role, new_)
-        
-        text = new_("user_settings.info").format(
-            username=username,
-            user_id=updated_user.telegram_id,
-            role=role_name,
-            language=language_name
-        )
-        
+
+        text = build_user_settings_text(updated_user, new_)
+
         await send_clean_menu(
             callback=callback,
             text=text,
@@ -258,6 +247,57 @@ async def toggle_reminder_setting(
                 _
             )
         )
-    
+
+    await safe_callback_answer(callback)
+
+
+@router.callback_query(F.data == "user_settings:clear_chat_ask")
+async def clear_chat_ask(callback: CallbackQuery, _: Callable[[str], str]):
+    """Ask for confirmation before wiping the chat history - deleting
+    dozens/hundreds of messages is irreversible, so this mirrors the
+    Yes/No confirmation pattern used for booking cancellation."""
+    if not isinstance(callback.message, TelegramMessage):
+        await safe_callback_answer(callback)
+        return
+
+    keyboard = InlineKeyboardBuilder()
+    keyboard.row(
+        InlineKeyboardButton(text=_("common.yes"), callback_data="user_settings:clear_chat_do"),
+        InlineKeyboardButton(text=_("common.no"), callback_data="menu:user_settings"),
+    )
+    await edit_or_ignore(
+        callback,
+        _("user_settings.clear_chat_confirm"),
+        reply_markup=keyboard.as_markup()
+    )
+    await safe_callback_answer(callback)
+
+
+@router.callback_query(F.data == "user_settings:clear_chat_do")
+async def clear_chat_confirmed(
+    callback: CallbackQuery,
+    user: User,
+    _: Callable[[str], str]
+):
+    """Delete every other message in the chat, leaving just this one
+    (rewritten into the settings screen) behind - the Bot API has no bulk
+    "clear chat" endpoint, see chat_cleaner.clear_chat_history for how
+    this actually walks message_id backwards to do it."""
+    if not isinstance(callback.message, TelegramMessage) or not callback.bot:
+        await safe_callback_answer(callback)
+        return
+
+    await clear_chat_history(
+        callback.bot,
+        callback.message.chat.id,
+        callback.message.message_id,
+    )
+
+    text = _("user_settings.clear_chat_done") + "\n\n" + build_user_settings_text(user, _)
+    await edit_or_ignore(
+        callback,
+        text,
+        reply_markup=get_user_settings_keyboard(_, user.role == UserRole.MECHANIC)
+    )
     await safe_callback_answer(callback)
 
