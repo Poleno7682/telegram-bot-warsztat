@@ -192,9 +192,12 @@ async def custom_duration_entered(
     same as the booking description elsewhere in this flow - no
     translation-confirmation step, unlike the admin "add service" flow,
     since this one is just a means to get a valid service_id for this
-    single booking). is_active=False keeps it out of
-    get_all_active_services() so it doesn't clutter the catalog/picker
-    for everyone else. Then joins the standard flow via
+    single booking). Created active - BookingService.create_booking
+    rejects service.is_active=False outright, so it must stay active
+    until the booking actually exists; it's marked is_custom_service in
+    FSM state and deactivated in _create_booking_and_respond right after
+    the booking is created, so it doesn't linger in the regular
+    catalog/picker for everyone else. Then joins the standard flow via
     _advance_to_date_selection, same as picking a real service does.
     """
     if not message.text:
@@ -224,9 +227,9 @@ async def custom_duration_entered(
             name_pl=translations.get("pl", service_name),
             name_ru=translations.get("ru", service_name),
             duration_minutes=duration,
-            is_active=False,
         )
     )
+    await state.update_data(is_custom_service=True)
 
     await _advance_to_date_selection(
         session=session,
@@ -580,6 +583,17 @@ async def _create_booking_and_respond(
     await trans_msg.delete()
 
     if booking:
+        if data.get("is_custom_service"):
+            # The service behind this booking was a one-off row typed by a
+            # mechanic (see custom_duration_entered) - deactivate it now
+            # that it has done its job, so it doesn't linger in the
+            # regular catalog/admin service list. Must happen *after*
+            # create_booking_and_notify succeeds, never before: it checks
+            # service.is_active and would reject the booking outright if
+            # the service were already inactive at creation time (see
+            # BookingService.create_booking).
+            await ServiceManagementService(session).delete_service(service_id)
+
         details = format_booking_details(booking, language, _)
         await show_result(details)
         await answer(_("booking.confirm.success"))
