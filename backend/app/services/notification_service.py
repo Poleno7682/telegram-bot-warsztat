@@ -40,13 +40,24 @@ class NotificationService:
     async def notify_mechanics_new_booking(self, booking: Booking) -> None:
         """
         Notify all mechanics about new booking
-        
+
         Args:
             booking: Booking instance
         """
         mechanics = await self.user_repo.get_all_mechanics()
-        
+
         for mechanic in mechanics:
+            if mechanic.id == booking.creator_id:
+                # A mechanic can create their own booking (see
+                # bot/handlers/booking.py's custom-service flow, or just
+                # the regular catalog flow - mechanics always had the
+                # "new booking" menu option). Pushing them an
+                # accept/reject prompt for their own submission makes no
+                # sense and was the root cause of a duplicate-menu bug:
+                # self-accepting it raced schedule_main_menu_return
+                # against the accept confirmation's own menu.
+                continue
+
             # Check rate limit before sending
             if await self.rate_limiter.is_allowed(mechanic.telegram_id):
                 await self._send_new_booking_notification(mechanic, booking)
@@ -60,20 +71,27 @@ class NotificationService:
     async def notify_booking_accepted(self, booking: Booking, mechanic: User) -> None:
         """
         Notify creator and other mechanics that booking was accepted
-        
+
         Args:
             booking: Booking instance
             mechanic: Mechanic who accepted
         """
-        # Notify creator
-        await self._send_booking_accepted_notification(
-            booking.creator,
-            booking,
-            mechanic
-        )
+        # A mechanic can accept their own booking (e.g. from "pending
+        # bookings" after creating it themselves). In that case, skip the
+        # creator-facing notification/menu-return entirely - the
+        # mechanic-facing confirmation below already covers them, and
+        # sending both duplicated the "return to main menu" message (see
+        # the mechanic-facing schedule_main_menu_return further down,
+        # which already targets the same chat_id in this case).
+        if booking.creator_id != mechanic.id:
+            await self._send_booking_accepted_notification(
+                booking.creator,
+                booking,
+                mechanic
+            )
 
-        # Return creator to main menu after 3 seconds
-        schedule_main_menu_return(self.bot, booking.creator.telegram_id, booking.creator, delay=3.0)
+            # Return creator to main menu after 3 seconds
+            schedule_main_menu_return(self.bot, booking.creator.telegram_id, booking.creator, delay=3.0)
 
         # Send confirmation message to mechanic with main menu
         # Cancel any scheduled menu return for mechanic to prevent duplicate

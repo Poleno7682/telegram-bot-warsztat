@@ -160,7 +160,7 @@ msgstr ""
 "{details}"
 
 msgid "booking.notification.accepted_mechanic"
-msgstr "✅ Запись принята"
+msgstr "✅ Rezerwacja zaakceptowana"
 
 msgid "booking.notification.cancelled"
 msgstr ""

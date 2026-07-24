@@ -153,6 +153,24 @@ class TestNotifyMechanicsNewBooking:
 
         bot.send_message.assert_not_awaited()
 
+    async def test_excludes_creator_when_creator_is_also_a_mechanic(
+        self, db_session, mechanic, other_mechanic, service, tomorrow_10am, bot
+    ):
+        """A mechanic can create their own booking (bot/handlers/booking.py's
+        custom-service flow, or the regular "new booking" menu option
+        mechanics always had) - they must not get an accept/reject push
+        for their own submission. Regression for a production bug: this
+        self-notification, combined with self-accepting it, sent the
+        mechanic's main menu twice."""
+        booking = await make_booking_with_relations(db_session, mechanic, service, tomorrow_10am)
+        notification_service = NotificationService(db_session, bot)
+
+        await notification_service.notify_mechanics_new_booking(booking)
+
+        notified_chat_ids = {call.args[0] for call in bot.send_message.await_args_list}
+        assert mechanic.telegram_id not in notified_chat_ids
+        assert other_mechanic.telegram_id in notified_chat_ids
+
 
 class TestNotifyBookingAcceptedRejected:
     async def test_accepted_notifies_creator_and_other_mechanics_not_acceptor(
@@ -183,6 +201,33 @@ class TestNotifyBookingAcceptedRejected:
         assert creator.telegram_id in notified_chat_ids
         assert other_mechanic.telegram_id in notified_chat_ids
         assert mechanic.telegram_id not in notified_chat_ids
+
+    async def test_self_accept_sends_one_confirmation_and_skips_creator_menu_return(
+        self, db_session, mechanic, other_mechanic, service, tomorrow_10am, bot, monkeypatch
+    ):
+        """Regression test for the production duplicate-menu bug: a
+        mechanic accepting their own booking (e.g. from the pending list,
+        or the self-notification the previous test now prevents) used to
+        get both the creator-facing "accepted" notification + a
+        3-second-delayed menu return, AND the mechanic-facing
+        confirmation with an embedded menu - two "Panel mechanika"
+        sends to the same chat.
+        """
+        schedule_mock = MagicMock()
+        monkeypatch.setattr(
+            "app.services.notification_service.schedule_main_menu_return", schedule_mock
+        )
+        booking = await make_booking_with_relations(db_session, mechanic, service, tomorrow_10am)
+        notification_service = NotificationService(db_session, bot)
+
+        await notification_service.notify_booking_accepted(booking, mechanic)
+
+        notified_chat_ids = [call.args[0] for call in bot.send_message.await_args_list]
+        assert notified_chat_ids.count(mechanic.telegram_id) == 1
+        assert other_mechanic.telegram_id in notified_chat_ids
+        # The creator-facing branch (redundant here - creator == acceptor)
+        # must be skipped entirely, not just deduplicated after the fact.
+        schedule_mock.assert_not_called()
 
 
 class TestNotifyTimeNegotiation:
