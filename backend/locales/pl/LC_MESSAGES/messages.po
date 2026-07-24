@@ -102,6 +102,12 @@ msgstr "Wprowadź imię klienta:"
 msgid "booking.create.enter_client_phone"
 msgstr "Wprowadź numer telefonu klienta (tylko cyfry):"
 
+msgid "booking.create.enter_custom_duration"
+msgstr "Ile minut to zajmie?"
+
+msgid "booking.create.enter_custom_service"
+msgstr "Wpisz usługę (lub listę usług w jednej wiadomości):"
+
 msgid "booking.create.enter_description"
 msgstr "Wprowadź krótki opis problemu:"
 

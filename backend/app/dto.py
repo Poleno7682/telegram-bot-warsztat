@@ -26,6 +26,12 @@ class ServiceCreateData:
     price: Optional[Decimal] = None
     description_pl: Optional[str] = None
     description_ru: Optional[str] = None
+    # False for the one-off Service rows created behind the scenes when a
+    # mechanic types a custom service/duration instead of picking from the
+    # catalog (see bot/handlers/booking.py, custom_duration_entered) - kept
+    # out of get_all_active_services() so they don't clutter the picker/
+    # management list for everyone else.
+    is_active: bool = True
 
 
 @dataclass(frozen=True)

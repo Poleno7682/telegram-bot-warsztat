@@ -8,12 +8,14 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
+from app.dto import ServiceCreateData
 from app.models.user import User, UserRole, LANGUAGE_UNSET
 from app.core.timezone_utils import ensure_local
 from app.services.booking_service import BookingService
 from app.services.booking_workflow_service import BookingWorkflowService
 from app.services.time_service import TimeService
 from app.services.service_management_service import ServiceManagementService
+from app.services.translation_service import translate_to_all_languages
 from app.bot.states.booking import BookingStates
 from app.utils.date_formatter import DateFormatter
 from app.utils.validators import validate_phone
@@ -50,6 +52,20 @@ async def start_new_booking(
 ):
     """Start new booking flow"""
     from app.bot.handlers.common import send_clean_menu
+
+    if user.role == UserRole.MECHANIC:
+        # Mechanics skip the fixed service catalog entirely and type the
+        # service (or a freeform list of services) and its duration by
+        # hand instead - see custom_service_name_entered/
+        # custom_duration_entered below for the rest of this path.
+        await send_clean_menu(
+            callback=callback,
+            text=_("booking.create.enter_custom_service"),
+            reply_markup=get_cancel_keyboard(_)
+        )
+        await state.set_state(BookingStates.entering_custom_service_name)
+        await safe_callback_answer(callback)
+        return
 
     # Get all active services
     service_mgmt = ServiceManagementService(session)
@@ -88,38 +104,139 @@ async def service_selected(
     if service_id is None:
         await safe_callback_answer(callback)
         return
-    
+
     # Get service to get duration
     service_mgmt = ServiceManagementService(session)
     service = await service_mgmt.get_service_by_id(service_id)
-    
+
     if not service:
         await edit_or_ignore(callback, _("errors.service_not_found"))
         await state.clear()
         await safe_callback_answer(callback)
         return
-    
-    # Save service ID
+
+    await _advance_to_date_selection(
+        session=session,
+        state=state,
+        language=language,
+        _=_,
+        send_result=lambda text, **kw: edit_or_ignore(callback, text, **kw),
+        service_id=service_id,
+        duration_minutes=service.duration_minutes,
+    )
+    await safe_callback_answer(callback)
+
+
+async def _advance_to_date_selection(
+    *,
+    session: AsyncSession,
+    state: FSMContext,
+    language: str,
+    _: Callable[[str], str],
+    send_result: Callable[..., Awaitable[Any]],
+    service_id: int,
+    duration_minutes: int,
+) -> None:
+    """Shared tail once a service and its duration are known - regardless
+    of whether the service came from the fixed catalog (service_selected)
+    or was typed by a mechanic (custom_duration_entered): look up
+    available dates and move on to date selection.
+
+    Args:
+        send_result: Shows the next prompt (or the "no dates" error) -
+            edit_or_ignore for the catalog-picking flow (callback-driven),
+            message.answer for the mechanic's free-text flow.
+    """
     await state.update_data(service_id=service_id)
-    
-    # Get available dates (filtered by available slots)
+
     time_service = TimeService(session)
-    dates = await time_service.get_available_dates(service.duration_minutes)
-    
-    # Check if there are any available dates
+    dates = await time_service.get_available_dates(duration_minutes)
+
     if not dates:
-        await edit_or_ignore(callback, _("booking.create.no_available_dates"))
-        await safe_callback_answer(callback)
+        await send_result(_("booking.create.no_available_dates"))
         return
 
-    # Show dates
-    await edit_or_ignore(
-        callback,
+    await send_result(
         _("booking.create.select_date"),
         reply_markup=get_dates_keyboard(dates, language)
     )
     await state.set_state(BookingStates.selecting_date)
-    await safe_callback_answer(callback)
+
+
+@router.message(BookingStates.entering_custom_service_name)
+async def custom_service_name_entered(message: TelegramMessage, _: Callable[[str], str], state: FSMContext):
+    """Handle a mechanic's freeform service name/list input."""
+    if not message.text or not message.text.strip():
+        await message.answer(_("errors.invalid_input"))
+        return
+
+    await state.update_data(custom_service_name=message.text.strip())
+    await message.answer(
+        _("booking.create.enter_custom_duration"),
+        reply_markup=get_cancel_keyboard(_)
+    )
+    await state.set_state(BookingStates.entering_custom_duration)
+
+
+@router.message(BookingStates.entering_custom_duration)
+async def custom_duration_entered(
+    message: TelegramMessage,
+    session: AsyncSession,
+    _: Callable[[str], str],
+    state: FSMContext,
+    language: str,
+):
+    """Handle a mechanic's manually entered service duration.
+
+    Creates a one-off Service row for the typed name (auto-translated,
+    same as the booking description elsewhere in this flow - no
+    translation-confirmation step, unlike the admin "add service" flow,
+    since this one is just a means to get a valid service_id for this
+    single booking). is_active=False keeps it out of
+    get_all_active_services() so it doesn't clutter the catalog/picker
+    for everyone else. Then joins the standard flow via
+    _advance_to_date_selection, same as picking a real service does.
+    """
+    if not message.text:
+        await message.answer(_("errors.invalid_input"))
+        return
+
+    try:
+        duration = int(message.text.strip())
+        if duration <= 0:
+            raise ValueError()
+    except ValueError:
+        await message.answer(_("errors.invalid_input"))
+        return
+
+    data = await state.get_data()
+    service_name = (data.get("custom_service_name") or "").strip()
+    if not service_name:
+        await message.answer(_("errors.unknown"))
+        await state.clear()
+        return
+
+    translations = await translate_to_all_languages(service_name, source_lang=language)
+
+    service_mgmt = ServiceManagementService(session)
+    service = await service_mgmt.create_service(
+        ServiceCreateData(
+            name_pl=translations.get("pl", service_name),
+            name_ru=translations.get("ru", service_name),
+            duration_minutes=duration,
+            is_active=False,
+        )
+    )
+
+    await _advance_to_date_selection(
+        session=session,
+        state=state,
+        language=language,
+        _=_,
+        send_result=lambda text, **kw: message.answer(text, **kw),
+        service_id=service.id,
+        duration_minutes=duration,
+    )
 
 
 @router.callback_query(BookingStates.selecting_date, F.data.startswith("date:"))

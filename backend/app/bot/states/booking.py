@@ -5,10 +5,17 @@ from aiogram.fsm.state import State, StatesGroup
 
 class BookingStates(StatesGroup):
     """States for creating a new booking"""
-    
+
     # Service selection
     selecting_service = State()
-    
+
+    # Mechanic-only alternative to selecting_service: mechanics type the
+    # service (or a list of services, freeform) and its duration manually
+    # instead of picking from the fixed catalog - see
+    # bot/handlers/booking.py, start_new_booking/custom_duration_entered.
+    entering_custom_service_name = State()
+    entering_custom_duration = State()
+
     # Date and time selection
     selecting_date = State()
     selecting_time = State()

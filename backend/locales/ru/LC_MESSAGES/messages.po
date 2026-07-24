@@ -102,6 +102,12 @@ msgstr "Введите имя клиента:"
 msgid "booking.create.enter_client_phone"
 msgstr "Введите номер телефона клиента (только цифры):"
 
+msgid "booking.create.enter_custom_duration"
+msgstr "Сколько минут потребуется?"
+
+msgid "booking.create.enter_custom_service"
+msgstr "Введите услугу (или список услуг одним сообщением):"
+
 msgid "booking.create.enter_description"
 msgstr "Введите краткое описание проблемы:"
 
